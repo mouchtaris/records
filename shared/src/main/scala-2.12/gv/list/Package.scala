@@ -9,7 +9,7 @@ trait Package {
 
   trait ::[a, b <: List] {
     val head: a
-    def tail: b
+    val tail: b
   }
 
   trait ListDeconstruct extends Any {
@@ -29,7 +29,7 @@ trait Package {
   sealed trait Nil extends (Nil :: Nil)
   val Nil: Nil = new Nil {
     val head = this
-    def tail = this
+    val tail = this
   }
 
   trait ListBuilding[self <: List] extends Any {

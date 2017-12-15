@@ -2,7 +2,6 @@ package gv
 package list
 package op
 
-object Map
+object Get
   extends AnyRef
-  with map.Functor
-
+  with get.Functor

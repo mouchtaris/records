@@ -2,7 +2,5 @@ package gv
 package list
 package op
 
-object Map
+object Contains
   extends AnyRef
-  with map.Functor
-

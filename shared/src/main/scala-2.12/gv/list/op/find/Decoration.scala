@@ -3,7 +3,7 @@ package list
 package op
 package find
 
-trait FindDecoration[list <: List] extends Any {
+trait Decoration[list <: List] extends Any {
 
   def self: list
 

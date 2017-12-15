@@ -18,7 +18,7 @@ import scala.reflect.runtime.universe.{Select ⇒ _, _},
   package_evidence._
 
 object package_evidence {
-  trait RecordEvidence {
+  trait RecordEvidence extends Any {
     this: Record ⇒
 
     trait FindGetterIn[vals <: List]
@@ -33,23 +33,41 @@ object package_evidence {
     ): Defined[FindGetterIn[vals], n, vals ⇒ T] =
       () ⇒ { case `n` ⇒ ev.apply }
 
-    object Evidence {
-      type Foldy[vals <: List] = Fold[FindGetterIn[vals], Fields, ScopedNamed[_], vals ⇒ ScopedNamed[_]#T]
-
-      def apply[vals <: List](vals: vals)(implicit ev: Evidence[vals]): ev.type = ev
-      implicit def implicitEvidence[vals <: List: Foldy]: Evidence[vals] = new Evidence
+    type Foldy[vals <: List] = Fold[FindGetterIn[vals], Fields, ScopedNamed[_], vals ⇒ ScopedNamed[_]#T]
+    implicit def implicitEvidence[vals <: List: Foldy]: Evidence[vals] = new Evidence
+    final class EvidenceCompanion {
+      def apply[vals <: List](implicit ev: Evidence[vals]): ev.type = ev
+      def apply[vals <: List: Evidence](vals: vals): Evidence[vals] = apply[vals]
     }
-    final class Evidence[vals <: List: Evidence.Foldy] {
-      val foldy: Evidence.Foldy[vals] = implicitly
+    final def Evidence: EvidenceCompanion = new EvidenceCompanion
+    final class Evidence[vals <: List: Foldy] {
+      val foldy: Foldy[vals] = implicitly
 
-      def getEvidence[n <: ScopedNamed[_]](implicit n: n): Get[n, vals] =
+      def getEvidence[n <: ScopedNamed[_]](implicit n: n): get.Evidence[n, vals] =
         vals ⇒ foldy(n).apply(vals).asInstanceOf[n.T]
-
-      def get[n <: ScopedNamed[_]](n: n)(vals: vals): n.T =
-        foldy(n)(vals).asInstanceOf[n.T]
     }
 
-    implicit def getEvidence[n <: ScopedNamed[_]: Implicitly, vals <: List](implicit ev: Evidence[vals]): Get[n, vals] = ev.getEvidence[n]
+    implicit def getEvidence[n <: ScopedNamed[_]: Implicitly, vals <: List](implicit ev: Evidence[vals]): get.Evidence[n, vals] = ev.getEvidence[n]
+  }
+
+  final implicit class RecordJoinDecoration[fields <: List](val self: Unit)
+    extends AnyVal
+    with Record
+  {
+    type Fields = fields
+  }
+
+  trait RecordJoin extends Any {
+    this: Record ⇒
+
+    def join[
+      fields <: List
+    ](r2: Record)(
+      implicit
+      fields: Concat[Fields, r2.Fields, fields]
+    ): RecordJoinDecoration[fields] =
+      ()
+
   }
 }
 
@@ -99,6 +117,17 @@ object package_weird {
     }
   }
 
+  trait Concat[l1 <: List, l2 <: List, out <: List] extends Any {
+    def apply(l1: l1, l2: l2): out
+  }
+  object Concat {
+    implicit def nilCat[l2 <: List]: Concat[Nil, l2, l2] = (nil, l2) ⇒ l2
+    implicit def listCat[h, t <: List, l2 <: List, tl2 <: List](
+      implicit
+      tcat: Concat[t, l2, tl2]
+    ): Concat[h :: t, l2, h :: tl2] =
+      (l1, l2) ⇒ l1.head :: tcat(l1.tail, l2)
+  }
 }
 
 object Incubator {
@@ -115,6 +144,8 @@ object Incubator {
     case object modifiedAt extends int
     type Fields = createdAt.type :: modifiedAt.type :: Nil
   }
+
+  val accountWithTimestamp = account.join(timestamped)
 
   val acc = {
     import account._
@@ -139,13 +170,17 @@ object Incubator {
       vals._
 
 
-    println { vals.get(email) }
-//    println { vals get createdAt }
+//    println { vals.get(password) }
+//    println { vals.get(email) }
+//    println { vals.get(authentication) }
+    println { vals.get(createdAt) }
+
   }
 
   def main(args: Array[String]): Unit = {
     import typebug.sinks.out
     doSomething(acc)
+    typebug.inspect[accountWithTimestamp.Fields]
   }
 
 }
@@ -169,7 +204,7 @@ object package_named {
 
   }
 
-  trait StandardNamedTypes {
+  trait StandardNamedTypes extends Any {
     trait ScopedNamed[T] extends Named[T]
     trait int extends ScopedNamed[Int]
     trait string extends ScopedNamed[String]
@@ -180,10 +215,10 @@ object package_named {
 object package_record {
 
   trait Record
-    extends AnyRef
-      with ImplicitlyAvailable
+    extends Any
       with StandardNamedTypes
       with RecordEvidence
+      with RecordJoin
   {
     type Fields <: List
   }

@@ -243,7 +243,7 @@ object mem {
 
   implicit val akkaTimeout = Timeout(20.seconds)
 
-  def main(args: Array[String]): Unit = {
+  def Main(args: Array[String]): Unit = {
     implicit val thebb = ByteBuffer.allocate(20 << 20)
     "helo".toData
     println { thebb.to[String] }
