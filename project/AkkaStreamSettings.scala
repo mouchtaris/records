@@ -4,10 +4,14 @@ import
 
 object AkkaStreamSettings {
 
+  import AkkaSettings.{
+    AkkaVersion ⇒ Version,
+  }
+
   val settings = Seq(
     libraryDependencies ++= Seq( 
-      "com.typesafe.akka" %% "akka-stream" % "2.5.6",
-      "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test
+      "com.typesafe.akka" %% "akka-stream" % Version,
+      "com.typesafe.akka" %% "akka-stream-testkit" % Version % Test
     )
   )
 

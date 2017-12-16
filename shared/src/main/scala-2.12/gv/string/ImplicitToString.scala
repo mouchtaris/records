@@ -1,7 +1,7 @@
 package gv
 package string
 
-trait ImplicitToString[T] {
+trait ImplicitToString[T] extends Any {
 
   implicit def implicitToString: ToString[T]
 

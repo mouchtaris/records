@@ -4,10 +4,14 @@ import
 
 object AkkaActorSettings {
 
+  import AkkaSettings.{
+    AkkaVersion ⇒ Version,
+  }
+
   val settings = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % "2.5.6",
-      "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % Test
+      "com.typesafe.akka" %% "akka-actor" % Version,
+      "com.typesafe.akka" %% "akka-testkit" % Version % Test
     )
   )
 

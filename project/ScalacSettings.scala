@@ -4,8 +4,7 @@ import
 
 object ScalacSettings {
 
-  val ScalaVersionWannabe = "2.12.4"
-  val ScalaVersion = "2.12.3" // because of IntelliJ sbt plugin issues
+  val ScalaVersion = "2.12.4"
 
   val standard = scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
@@ -21,7 +20,7 @@ object ScalacSettings {
     "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
 //    "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
 //    "-Xprint:typer",
-    "-Xlog-implicits",
+//    "-Xlog-implicits",
     "-Xfuture",                          // Turn on future language features.
     "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
     "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
