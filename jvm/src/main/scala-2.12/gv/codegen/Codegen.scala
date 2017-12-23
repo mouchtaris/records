@@ -19,14 +19,14 @@ import
     Await,
   },
   scala.concurrent.duration._,
+  scala.util.{ Try, Success, Failure },
   org.jruby.embed.{
     ScriptingContainer,
   },
   akka.{ Done, NotUsed },
   akka.stream.{ Materializer },
   akka.stream.scaladsl.{ Source, Sink, Flow },
-  lang._,
-  fun._
+  lang._
 
 object Codegen {
 
@@ -78,30 +78,44 @@ object Codegen {
         .callMethod(facade, "handlers_for_java", Array(template), classOf[Array[Object]])
   }
 
-  val getFacade: Flow[ScriptingContainer, Facade, NotUsed] = Flow
-    .fromFunction { jruby ⇒
-      val facade = apply2(inputSource)(jruby.runScriptlet)
+  val getFacade: Flow[ScriptingContainer, Facade, NotUsed] =
+    Flow fromFunction { jruby ⇒
+      apply2(inputSource)(jruby.runScriptlet)
+      val facade = jruby.get("Facade")
       Facade(jruby, facade)
     }
 
-  val getTemplates: Flow[Facade, Template, NotUsed] = Flow[Facade]
-    .map(_.templates)
-    .flatMapMerge(8, Source.apply)
+  val getTemplates: Flow[Facade, Template, NotUsed] =
+    Flow
+      .fromFunction((_: Facade).templates)
+      .flatMapMerge(8, Source.apply)
 
-  val getHandlers: Flow[Template, Handler, NotUsed] = Flow[Template]
-    .map(_.handlers)
-    .flatMapMerge(8, Source.apply)
+  val getHandlers: Flow[Template, Handler, NotUsed] =
+    Flow
+      .fromFunction((_: Template).handlers)
+      .flatMapMerge(8, Source.apply)
 
-  val process: Flow[ScriptingContainer, Handler, NotUsed] = Flow[ScriptingContainer]
-    .via(getFacade).async
-    .via(getTemplates).async
-    .via(getHandlers).async
+  val runHandler: Flow[Handler, Handler, NotUsed] = Flow fromFunction {
+    (_: Handler) tap (_ handle ())
+  }
 
-  val handleTemplate: Sink[Handler, Future[Done]] = Sink
-    .foreach(_.handle())
+  val process: Flow[ScriptingContainer, Handler, NotUsed] =
+    getFacade.async
+      .via(getTemplates).async
+      .via(getHandlers).async
+      .via(runHandler).async
 
-  def processTemplates(jruby: ScriptingContainer)(implicit mat: Materializer): Future[Done] =
-    Source single jruby via process runWith handleTemplate
+  val recovery: Flow[Handler, Try[Handler], NotUsed] =
+    Flow
+      .fromFunction { Success(_: Handler): Try[Handler] }
+      .recover { case ex ⇒ Failure(ex) }
+      .async
+
+  val handleTemplate: Sink[Try[Handler], Future[Vector[Try[Handler]]]] =
+    Sink.fold(Vector.empty[Try[Handler]])(_ :+ _)
+
+  def processTemplates(jruby: ScriptingContainer)(implicit mat: Materializer): Future[Vector[Try[Handler]]] =
+    Source single jruby via process via recovery runWith handleTemplate
 
   val MAX_WAIT = 10.seconds
 }
@@ -125,10 +139,19 @@ final class Codegen(
     .tap(_ setArgv argv)
 
   def run(): Unit = println {
-    Await.result(
-      Codegen.processTemplates(jruby),
-      Codegen.MAX_WAIT
-    )
+    import Console._
+    Await
+      .result(
+        Codegen.processTemplates(jruby),
+        Codegen.MAX_WAIT
+      )
+      .map {
+        case Success(han) ⇒
+          s"[$GREEN OK$RESET ] ${han.template.template}"
+        case Failure(ex) ⇒
+          s"[$RED FAIL$RESET ] $ex"
+      }
+      .mkString("\n")
   }
 
 }

@@ -2,7 +2,7 @@ package gv
 package list
 package conversions
 
-trait TupleConversions<%= @n %> {
+trait TupleToList<%= @n %> extends Any {
 
   final implicit def tuple<%= @n %>ToList[
     <%= type_params.join(', ') %>

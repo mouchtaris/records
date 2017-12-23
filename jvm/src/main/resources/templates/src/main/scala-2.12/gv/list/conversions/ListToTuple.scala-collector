@@ -1,0 +1,11 @@
+package gv
+package list
+package conversions
+
+trait ListToTuple extends Any
+<%
+  all.each do |handler|
+    %>  with ListToTuple<%= handler.n %>
+<%
+  end
+%>

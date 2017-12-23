@@ -1,6 +1,5 @@
 package gv
 package list
 
-trait ImplicitConversions extends Any {
-
-}
+trait ImplicitConversions extends Any
+//  with conversions.TupleToList
