@@ -18,7 +18,7 @@ trait ListToTuple<%= @n %> extends Any {
 
   final implicit def listToTuple<%= @n %>[
     <%= type_params.join(', ') %>
-  ]: Function1[
+  ]: ToTuple[
     <%= list_type %>,
     <%= tuple_type %>,
   ] =
@@ -27,7 +27,7 @@ trait ListToTuple<%= @n %> extends Any {
       val <%= tmp %> = <%= prev %>.tail<%
       end %>
 
-      (<%
+      Tuple<%= @n %>(<%
         tmps.each do |tmp| %>
         <%= tmp %>.head,<%
         end%>

@@ -71,9 +71,14 @@ object Incubator {
 //    println {
 //      Await.result(db.run(Tables.Users.take(1).result), 10.seconds)
 //    }
-    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
-//    val li = (1, "Hello", true).toList
-//    typebug.inspect[li.type]
+
+
+//    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
+//
+    val li = (1, "Hello", true).toList
+    typebug.inspect[li.type]
+    val tu = li.toTuple
+    typebug.inspect[tu.type]
   }
   finally {
     db.close()

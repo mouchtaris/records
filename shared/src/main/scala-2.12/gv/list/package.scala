@@ -5,6 +5,7 @@ package object list
   with list.Package
   with ImplicitConversions
   with ToListDeco
+  with ToTupleDeco
 {
 
   final implicit class ListDeco[self <: List](val self: self)
