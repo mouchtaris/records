@@ -1,9 +1,10 @@
 # frozen-string-literal: true
-require 'pathname'
-require 'yaml'
-require 'java'
-require 'pp'
+require 'erb'
 require 'fileutils'
+require 'java'
+require 'pathname'
+require 'pp'
+require 'yaml'
 
 Codegen = Java::gv.codegen.Codegen
 
@@ -58,13 +59,12 @@ class TemplateHandler
   end
 
   def each_i
-    enum_for :each_i unless block_given?
-    (n..1).each { |i| yield i }
+    return enum_for :each_i unless block_given?
+    (1..@n).each { |*a| yield *a }
   end
 
   def type_params
-    each_i
-      .map(&'T'.method(:+))
+    each_i.map(&:to_s).map(&'T'.method(:+))
   end
 
   def tuple_type
@@ -76,15 +76,7 @@ class TemplateHandler
   end
 
   def context
-    _n = @n
-    _tuple_type = tuple_type
-    _list_type = list_type
-    Object.new.instance_exec {
-      @n = _n
-      @tuple_type = _tuple_type
-      @list_type = _list_type
-      binding
-    }
+    binding
   end
 
   def rendered
@@ -114,19 +106,23 @@ module Facade
   def self.templates
     manifest
       .map { |k, v| enum_for :visit_manifest, [], k, v }
-  end
-
-  def self.handlers
-    templates
       .flat_map(&:to_a)
-      .flat_map do |template|
-        (1..N).map { |n| TemplateHandler.new(template, n) }
-      end
   end
 
-  def self.handle!
-    handlers.map(&:handle!)
+  def self.templates_java
+    templates.to_a.to_java
   end
+
+  def self.handlers_for(template)
+    (1..N).map do |n|
+      TemplateHandler.new(template, n)
+    end
+  end
+
+  def self.handlers_for_java(template)
+    handlers_for(template).to_a.to_java
+  end
+
 end
 
 Facade

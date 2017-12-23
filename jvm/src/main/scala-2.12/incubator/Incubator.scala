@@ -9,6 +9,12 @@ import
     Config,
     ConfigFactory,
   },
+  akka.actor.{
+    ActorSystem,
+  },
+  akka.stream.{
+    ActorMaterializer,
+  },
   gv.{fun, lang, list, string, tag, types, record, config, util},
   list._,
   list.op._,
@@ -50,6 +56,8 @@ object Incubator {
   }
   object timestamped extends timestamped
 
+  implicit val actorSystem = ActorSystem("Actoriliki")
+  implicit val materializer = ActorMaterializer()
   val conf = ConfigFactory.defaultApplication()
   val dburi = conf getString "db.pat.staging"
   def main(args: Array[String]): Unit = try {
@@ -63,10 +71,11 @@ object Incubator {
 //    println {
 //      Await.result(db.run(Tables.Users.take(1).result), 10.seconds)
 //    }
-    new gv.codegen.Codegen("/templates/manifest.yaml", ".").run()
+    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
   }
   finally {
     db.close()
+    actorSystem.terminate()
   }
 
   def db = slick.jdbc.JdbcBackend.Database.forConfig("db.musae.local")
