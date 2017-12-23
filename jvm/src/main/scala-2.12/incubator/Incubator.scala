@@ -63,7 +63,7 @@ object Incubator {
 //    println {
 //      Await.result(db.run(Tables.Users.take(1).result), 10.seconds)
 //    }
-    new gv.codegen.Codegen("/mem/pat2/jvm/src/main/jruby/codegen.rb", "/mem/hllobo").run()
+    new gv.codegen.Codegen("/templates/manifest.yaml", ".").run()
   }
   finally {
     db.close()

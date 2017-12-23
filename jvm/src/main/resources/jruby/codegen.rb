@@ -3,21 +3,130 @@ require 'pathname'
 require 'yaml'
 require 'java'
 require 'pp'
+require 'fileutils'
 
 Codegen = Java::gv.codegen.Codegen
 
-TEMPLATES = Pathname '/templates'
-MANIFEST = TEMPLATES + 'manifest.yaml'
-
-def resource path
-    Codegen.resource(path).to_io
+def manifest_pathname
+  Pathname(ARGV[0])
 end
 
-def visit(key, value)
+def destination_dir_pathname
+  Pathname(ARGV[1])
+end
+
+def resource(path)
+  Java::gv.codegen.Codegen.resource(path.to_s)
+    .tap { |rc| raise "Resource not found: #{path}" unless rc }
+    .to_io
+end
+
+def make_path(path, key, value)
+  Pathname((path.dup << key << value).join("/"))
+end
+
+def visit_manifest(path, key, value)
   case value
-  when String
-    handleTemplate(value)
+    when String
+      yield make_path(path, key, value)
+    else
+      path2 = path.dup << key
+      value.each do |k2, v2|
+        visit_manifest(path2, k2, v2) { |*a| yield *a }
+      end
   end
 end
 
-PP.pp YAML.load(resource MANIFEST), String.new
+def manifest
+  YAML.load(resource(manifest_pathname))
+end
+
+class TemplateHandler
+
+  def initialize(template, n)
+    @n = n
+    @template = template.dup.freeze
+  end
+  attr_reader :template
+
+  def resource_pathname
+    manifest_pathname.dirname + @template
+  end
+
+  def source
+    resource(resource_pathname.to_s).read
+  end
+
+  def each_i
+    enum_for :each_i unless block_given?
+    (n..1).each { |i| yield i }
+  end
+
+  def type_params
+    each_i
+      .map(&'T'.method(:+))
+  end
+
+  def tuple_type
+    "Tuple#@n[#{type_params.join ', '}]"
+  end
+
+  def list_type
+    type_params.join(" :: ") + " :: Nil"
+  end
+
+  def context
+    _n = @n
+    _tuple_type = tuple_type
+    _list_type = list_type
+    Object.new.instance_exec {
+      @n = _n
+      @tuple_type = _tuple_type
+      @list_type = _list_type
+      binding
+    }
+  end
+
+  def rendered
+    ERB.new(source).result(context)
+  end
+
+  def numbered_name
+    "#{@template.basename(@template.extname)}#@n#{@template.extname}"
+  end
+
+  def destination_pathname
+    destination_dir_pathname + @template.dirname + numbered_name
+  end
+
+  def handle!
+    destination_pathname.tap do |dst|
+      FileUtils::Verbose.mkdir_p dst.dirname
+      dst.open('w') { |fout| fout.write(rendered) }
+    end
+  end
+
+end
+
+module Facade
+  N = 22
+
+  def self.templates
+    manifest
+      .map { |k, v| enum_for :visit_manifest, [], k, v }
+  end
+
+  def self.handlers
+    templates
+      .flat_map(&:to_a)
+      .flat_map do |template|
+        (1..N).map { |n| TemplateHandler.new(template, n) }
+      end
+  end
+
+  def self.handle!
+    handlers.map(&:handle!)
+  end
+end
+
+Facade

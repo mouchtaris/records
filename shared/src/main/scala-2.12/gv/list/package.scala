@@ -3,6 +3,8 @@ package gv
 package object list
   extends AnyRef
   with list.Package
+  with ImplicitConversions
+  with ToListDeco
 {
 
   final implicit class ListDeco[self <: List](val self: self)

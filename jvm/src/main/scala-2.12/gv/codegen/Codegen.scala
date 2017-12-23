@@ -28,14 +28,14 @@ object Codegen {
 }
 
 final class Codegen(
-  inputDirPathname: String,
+  manifestPathname: String,
   destinationDirPathname: String
 ) extends AnyRef
   with Runnable
 {
 
   def argv = Array(
-    inputDirPathname,
+    manifestPathname,
     destinationDirPathname
   )
 
@@ -52,11 +52,9 @@ final class Codegen(
     f.tupled(ab)
 
   def run(): Unit = println {
-    apply2(inputSource) {
-      jruby
-        .tap(_ setArgv argv)
-        .runScriptlet
-    }
+    val engine = jruby.tap(_ setArgv argv)
+    val receiver = apply2(inputSource) { engine.runScriptlet }
+    engine.callMethod(receiver, "handle!")
   }
 
 }
