@@ -12,6 +12,8 @@ trait Record
     with closed.RecordMixIn
 {
   type Fields <: List
+
+  def name: String = toString
 }
 
 object Record {

@@ -37,7 +37,29 @@ import
 
 object package_evidence
 
-object package_weird
+object package_weird {
+
+  trait ZipLists[a <: List, b <: List, out <: List] {
+    def apply(a: a, b: b): out
+  }
+
+  object NilZip extends ZipLists[List, List, Nil] {
+    def apply(a: List, b: List): Nil = Nil
+    def apply[a <: List, b <: List](): ZipLists[a, b, Nil] = asInstanceOf[ZipLists[a, b, Nil]]
+  }
+
+  implicit def zipNilA[b <: List]: ZipLists[Nil, b, Nil] = NilZip()
+  implicit def zipNilB[a <: List]: ZipLists[a, Nil, Nil] = NilZip()
+
+  implicit def zipList[a, ta <: List, b, tb <: List, tzip <: List](
+    implicit
+    tzip: ZipLists[ta, tb, tzip],
+  ): ZipLists[a :: ta, b :: tb, (a, b) :: tzip] = {
+    case (a :: ta, b :: tb) ⇒
+      (a, b) :: tzip(ta, tb)
+  }
+
+}
 
 object Incubator {
 
@@ -74,11 +96,16 @@ object Incubator {
 
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
-//
+
     val li = (1, "Hello", true).toList
     typebug.inspect[li.type]
     val tu = li.toTuple
     typebug.inspect[tu.type]
+
+    import me.musae.detail.slick.Tables
+    import me.musae.model._
+    import Tables.profile.api._
+    Tables.users.withFilter(_.col(user.id) > 2)
   }
   finally {
     db.close()

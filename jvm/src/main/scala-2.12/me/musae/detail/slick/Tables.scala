@@ -1,16 +1,10 @@
 package me.musae
 package detail.slick
 
-import
-  gv.{
-    list,
-  },
-  list._,
-  model.Model.{
-    User ⇒ user
-  }
-
-trait Tables {
+trait Tables
+  extends AnyRef
+  with record_table.MixIn
+{
   val profile: slick.jdbc.JdbcProfile
 
   import profile.api._
@@ -25,12 +19,8 @@ trait Tables {
     users.schema
   ).reduceLeft(_ ++ _)
 
-  class Users(tag: Tag) extends Table[(Int, String)](tag, "users") {
-    def email = column[String]("email")
-    def id = column[Int]("id")
-    def * = (id, email)
-  }
-  lazy val users = new TableQuery(new Users(_))
+  lazy val users = new TableQuery(RecordTable(model.user)(_))
+
 }
 
 object Tables extends Tables {

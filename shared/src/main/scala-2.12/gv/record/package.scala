@@ -1,6 +1,7 @@
 package gv
 
 import
+  lang._,
   list._,
   list.op._
 
@@ -30,5 +31,22 @@ package object record {
     def got[r <: Record](n: r#ScopedNamed[_])(implicit ev: record.Evidence[r#Fields, vals]): n.T =
       ev.getters(n)(self).asInstanceOf[n.T]
   }
+
+  final implicit class ImplicitFields[
+    fields <: List,
+  ](
+    val self: fields
+  )
+    extends AnyVal
+
+  def implicitlyFields[fields <: List: ImplicitFields]: fields = implicitly[ImplicitFields[fields]].self
+
+  implicit val nilImplicitFields: ImplicitFields[Nil] = Nil
+
+  implicit def listImplicitFields[
+    h: Implicitly,
+    t <: List: ImplicitFields
+  ]: ImplicitFields[h :: t] =
+    implicitly[h] :: implicitlyFields[t]
 
 }
