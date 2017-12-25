@@ -19,7 +19,7 @@ trait Tables
     users.schema
   ).reduceLeft(_ ++ _)
 
-  lazy val users = new TableQuery(RecordTable(model.user)(_))
+  lazy val users = new TableQuery(RecordTable(model.users)(_))
 
 }
 

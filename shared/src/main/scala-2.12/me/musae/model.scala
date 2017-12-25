@@ -11,14 +11,16 @@ import
 
 trait model {
 
-  case object user extends Record {
+  case object users extends Record {
     type Fields =
       id.type ::
       email.type ::
+      `type`.type ::
       Nil
 
     case object id extends int
     case object email extends string
+    case object `type` extends string
   }
 
 }

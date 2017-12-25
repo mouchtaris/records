@@ -15,6 +15,7 @@ import gv.{
   fun,
   types,
   config,
+  record,
 }
 import list._
 import list.op._
@@ -22,4 +23,5 @@ import record._
 import fun._
 import types._
 import config._
+import record._
 import me.musae.detail.slick

@@ -2,8 +2,16 @@ package incubator
 
 import
   scala.reflect.{ClassTag, classTag},
-  scala.util.{ Success },
-  scala.concurrent.{ Future, Await, ExecutionContext },
+  scala.util.{
+    Success,
+    Failure,
+    Try,
+  },
+  scala.concurrent.{
+    Future,
+    Await,
+    ExecutionContext,
+  },
   scala.concurrent.duration._,
   com.typesafe.config.{
     Config,
@@ -85,34 +93,35 @@ object Incubator {
   def main(args: Array[String]): Unit = try {
     import typebug.sinks.out
     wat.`DO SOMETHING!!!`
-
-//    import slick.dbio.DBIO
-//    import me.musae.detail.slick.Tables
-//    import Tables.profile.api._
-//    import ExecutionContext.Implicits.global
-//    println {
-//      Await.result(db.run(Tables.Users.take(1).result), 10.seconds)
-//    }
-
+    db;
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
 
+    val futureUsers: Future[Seq[(Int, String, String)]] = db run {
+      import me.musae.detail.slick.Tables._
+      import profile.api._
+      users.result
+    }
     val li = (1, "Hello", true).toList
     typebug.inspect[li.type]
     val tu = li.toTuple
     typebug.inspect[tu.type]
-
-    import me.musae.detail.slick.Tables
-    import me.musae.model._
-    import Tables.profile.api._
-    Tables.users.withFilter(_.col(user.id) > 2)
+    import ExecutionContext.Implicits.global
+    Await.ready(futureUsers, 5.seconds).onComplete {
+      case Success(users) ⇒
+        println(" --- Users --- ")
+        users foreach println
+      case Failure(ex) ⇒
+        println(" USERS FAIL" )
+        ex.printStackTrace()
+    }
   }
   finally {
     db.close()
     actorSystem.terminate()
   }
 
-  def db = slick.jdbc.JdbcBackend.Database.forConfig("db.musae.local")
+  lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db.musae.local")
 
 }
 
