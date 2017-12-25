@@ -64,6 +64,9 @@ object typebug {
   def inspect[t: TypeTag](implicit sink: TypeBugInspectSink): Unit =
     inspect(sink, typeOf[t])
 
+  def inspect[t: TypeTag](t: t)(implicit sink: TypeBugInspectSink): Unit =
+    inspect[t]
+
   def inspect[w: Writable](w: w, t: Type, ind0: Ind = Ind(0), head0: Header = Header("")): Unit = {
     val ind1 = ind0 + 1
     w.print(ind0(head0))

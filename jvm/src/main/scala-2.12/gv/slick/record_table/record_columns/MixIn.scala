@@ -1,10 +1,14 @@
-package me.musae
-package detail.slick
+package gv
+package slick
 package record_table
 package record_columns
 
+import
+  list._,
+  fun._
+
 trait MixIn extends Any {
-  this: Tables ⇒
+  this: record_table.MixIn ⇒
   import profile.api._
 
   sealed trait RecordColumns[

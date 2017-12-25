@@ -2,7 +2,6 @@ package gv
 package record
 
 import
-  fun._,
   list._
 
 trait Record
@@ -10,6 +9,7 @@ trait Record
     with StandardNamedTypes
     with evidence.RecordMixIn
     with closed.RecordMixIn
+    with untagged.MixIn
 {
   type Fields <: List
 

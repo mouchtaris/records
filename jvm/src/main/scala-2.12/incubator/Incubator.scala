@@ -97,16 +97,21 @@ object Incubator {
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
 
-    val futureUsers: Future[Seq[(Int, String, String)]] = db run {
-      import me.musae.detail.slick.Tables._
-      import profile.api._
-      users.result
-    }
-    val li = (1, "Hello", true).toList
-    typebug.inspect[li.type]
-    val tu = li.toTuple
-    typebug.inspect[tu.type]
+    import me.musae.model
     import ExecutionContext.Implicits.global
+
+    val futureUsers =
+      db run {
+        import me.musae.detail.slick.Tables._
+        import profile.api._
+        import model.users._
+        val qq = users
+          .withFilter { _.col(id) === 2 }
+          .map { t ⇒ (t.col(email), t.col(`type`)) }
+        val q = qq
+        q.result
+      }
+      .map { _ map { _.toList } }
     Await.ready(futureUsers, 5.seconds).onComplete {
       case Success(users) ⇒
         println(" --- Users --- ")
