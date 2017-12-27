@@ -4,7 +4,7 @@ import
 
 object ProjectSettings {
 
-  val Name = "musae"
+  val Name = "infra"
   val Version = "0.0.1-SNAPSHOT"
 
   val settings = Seq(

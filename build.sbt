@@ -1,23 +1,29 @@
-lazy val root = project.in(file("."))
-  .aggregate(musaeJVM, musaeJS)
-  .settings(
-    publish := {},
-    publishLocal := {},
-  )
+import sbtcrossproject.{
+    crossProject,
+    CrossType,
+  }
 
-lazy val musae = crossProject.in(file("."))
-  .settings(ProjectSettings.settings)
-  .settings(ScalacSettings.settings)
-  .jvmSettings(SlickSettings.settings)
-  .jvmSettings(AkkaActorSettings.settings)
-  .jvmSettings(AkkaStreamSettings.settings)
-  .jvmSettings(AkkaHttpSettings.settings)
-  .jvmSettings(JRubySettings.settings)
-  .jsSettings(ScalaJsSettings.settings)
+lazy val infra = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Full)
+  .settings {
+    ProjectSettings.settings ++
+    ScalacSettings.settings ++
+    Seq.empty
+  }
+  .jvmSettings {
+    SlickSettings.settings ++
+    AkkaActorSettings.settings ++
+    AkkaStreamSettings.settings ++
+    AkkaHttpSettings.settings ++
+    JRubySettings.settings ++
+    Seq.empty
+  }
+  .jsSettings {
+    ScalaJsSettings.settings ++
+    Seq.empty
+  }
 
-lazy val musaeJVM = musae.jvm
+lazy val infraJVM = infra.jvm
 
-lazy val musaeJS = musae.js
-  .enablePlugins(
-    ScalaJsSettings.plugin
-  )
+lazy val infraJS = infra.js
+  .enablePlugins(ScalaJsSettings.plugins: _*)

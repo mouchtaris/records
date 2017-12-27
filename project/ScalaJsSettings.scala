@@ -1,16 +1,24 @@
 import
   sbt._,
   Keys._,
-  org.scalajs.sbtplugin.ScalaJSPlugin,
-  ScalaJSPlugin.autoImport._
+  org.scalajs.sbtplugin.{
+    ScalaJSPlugin,
+  },
+  org.scalajs.jsdependencies.sbtplugin.{
+    JSDependenciesPlugin,
+  },
+  ScalaJSPlugin.autoImport._,
+  JSDependenciesPlugin.autoImport._
 
 object ScalaJsSettings {
 
-  val settings = Seq(
-    scalaJSUseMainModuleInitializer := true,
-    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+  val plugins = Seq(
+    ScalaJSPlugin,
+    JSDependenciesPlugin,
   )
 
-  val plugin = ScalaJSPlugin
+  val settings = Seq(
+    scalaJSUseMainModuleInitializer := false,
+  )
 
 }

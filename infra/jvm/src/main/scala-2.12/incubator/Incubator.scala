@@ -107,15 +107,13 @@ object Incubator {
         import model.users._
         val qq = users
           .withFilter { _.col(id) === 2 }
-          .map { t ⇒ (t.col(email), t.col(`type`)) }
         val q = qq
         q.result
       }
-      .map { _ map { _.toList } }
     Await.ready(futureUsers, 5.seconds).onComplete {
       case Success(users) ⇒
         println(" --- Users --- ")
-        users foreach println
+        users foreach (_ println ())
       case Failure(ex) ⇒
         println(" USERS FAIL" )
         ex.printStackTrace()
@@ -126,7 +124,7 @@ object Incubator {
     actorSystem.terminate()
   }
 
-  lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db.musae.local")
+  lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db." + conf.getString("db.default"))
 
 }
 

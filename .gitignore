@@ -1,6 +1,6 @@
 /.idea/
-/js/target
-/jvm/target
+/infra/js/target/
+/infra/jvm/target/
 /project/project/
 /project/target/
 /target/
