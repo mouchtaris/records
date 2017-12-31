@@ -1,5 +1,4 @@
-package me
-package musae
+package infra.blue
 
 import
   gv.{
@@ -10,6 +9,16 @@ import
   record._
 
 trait model {
+
+  case object account extends Record {
+    case object id extends int
+    case object email extends string
+
+    type Fields =
+      id.type ::
+      email.type ::
+      Nil
+  }
 
   case object users extends Record {
     type Fields =

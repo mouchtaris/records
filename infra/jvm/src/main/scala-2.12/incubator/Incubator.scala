@@ -1,7 +1,10 @@
 package incubator
 
 import
-  scala.reflect.{ClassTag, classTag},
+  scala.reflect.{
+    ClassTag,
+    classTag,
+  },
   scala.util.{
     Success,
     Failure,
@@ -11,17 +14,44 @@ import
     Future,
     Await,
     ExecutionContext,
+    Promise,
   },
   scala.concurrent.duration._,
   com.typesafe.config.{
     Config,
     ConfigFactory,
   },
+  akka.{
+    NotUsed,
+    Done,
+  },
   akka.actor.{
     ActorSystem,
+    Actor,
+    ActorRef,
+    Inbox,
   },
   akka.stream.{
     ActorMaterializer,
+    UniformFanInShape,
+    UniformFanOutShape,
+    FlowShape,
+    SourceShape,
+    SinkShape,
+  },
+  akka.stream.scaladsl.{
+    Flow,
+    Sink,
+    Source,
+    GraphDSL,
+  },
+  akka.http.scaladsl.server.{
+    RequestContext,
+  },
+  akka.http.scaladsl.model.{
+    HttpRequest,
+    HttpResponse,
+    Uri,
   },
   gv.{fun, lang, list, string, tag, types, record, config, util},
   list._,
@@ -71,60 +101,27 @@ object package_weird {
 
 object Incubator {
 
-  trait account extends Record {
-    case object email extends string
-    case object password extends string
-    case object authentication extends string
-    type Fields = email.type :: password.type :: authentication.type :: Nil
-  }
-  object account extends account
-
-  trait timestamped extends Record {
-    case object createdAt extends int
-    case object modifiedAt extends int
-    type Fields = createdAt.type :: modifiedAt.type :: Nil
-  }
-  object timestamped extends timestamped
-
   implicit val actorSystem = ActorSystem("Actoriliki")
   implicit val materializer = ActorMaterializer()
   val conf = ConfigFactory.defaultApplication()
   val dburi = conf getString "db.pat.staging"
+  implicit val httpconf: infra.blue.http.Config.Ext = conf
+  lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db." + conf.getString("db.default"))
+
   def main(args: Array[String]): Unit = try {
     import typebug.sinks.out
+    import ExecutionContext.Implicits.global
     wat.`DO SOMETHING!!!`
     db;
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
 
-    import me.musae.model
-    import ExecutionContext.Implicits.global
-
-    val futureUsers =
-      db run {
-        import me.musae.detail.slick.Tables._
-        import profile.api._
-        import model.users._
-        val qq = users
-          .withFilter { _.col(id) === 2 }
-        val q = qq
-        q.result
-      }
-    Await.ready(futureUsers, 5.seconds).onComplete {
-      case Success(users) ⇒
-        println(" --- Users --- ")
-        users foreach (_ println ())
-      case Failure(ex) ⇒
-        println(" USERS FAIL" )
-        ex.printStackTrace()
-    }
+    Await.ready(infra.blue.http.Server.create().start(), 14.seconds).onComplete(println)
   }
   finally {
     db.close()
     actorSystem.terminate()
   }
-
-  lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db." + conf.getString("db.default"))
 
 }
 

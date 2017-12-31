@@ -1,4 +1,4 @@
-package me.musae
+package infra.blue
 package detail.slick
 
 import
