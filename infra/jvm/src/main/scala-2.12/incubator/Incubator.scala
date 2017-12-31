@@ -111,7 +111,6 @@ object Incubator {
   def main(args: Array[String]): Unit = try {
     import typebug.sinks.out
     import ExecutionContext.Implicits.global
-    wat.`DO SOMETHING!!!`
     db;
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()

@@ -13,7 +13,8 @@ object Config {
 
   final implicit class Ext(
     val root: tsConfig
-  ) {
+  ) extends AnyVal
+  {
     def interface: String = root getString INTERFACE
     def port: Int = root getInt PORT
   }

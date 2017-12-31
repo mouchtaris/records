@@ -13,10 +13,10 @@ object Config {
 
   final implicit class Ext(
     val self: tsConfig
-  ) {
+  ) extends AnyVal
+  {
     def root: tsConfig = self getConfig CONFIG
     def toServerConfig: http.Config.Ext = root
   }
-
 
 }
