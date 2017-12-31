@@ -39,6 +39,13 @@ import
     FlowDecoration,
   }
 
+object Server {
+  type Started = Started.type
+  type Ended = Ended.type
+  object Started
+  object Ended
+}
+
 class Server(
   route: Route,
   completeSignal: Future[NotUsed],
@@ -77,18 +84,22 @@ class Server(
 
   val http: HttpExt = Http()
 
-  def start(): Future[Unit] = {
+  def start(): (Future[Server.Started], Future[Server.Ended]) = {
     import system.dispatcher
-    http
+    val binding = http
       .bindAndHandle(
         interface = config.interface,
         port = config.port,
         handler = snifflingFlow,
       )
+    val started = binding map (_ ⇒ Server.Started)
+    val ended = binding
       .zip(completeSignal)
       .flatMap {
         case (binding, _) ⇒
           binding.unbind()
       }
+      .map(_ => Server.Ended)
+    (started, ended)
   }
 }

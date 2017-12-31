@@ -5,22 +5,30 @@ import
   gv.{
     list,
     record,
+    fun,
   },
   list._,
   record._,
+  fun._,
   infra.blue.model
 
 @JSExportTopLevel("infra")
 @JSExportAll
 object Infra {
 
-  @JSExportTopLevel("infra.Credentials")
-  case class Credentials(id: String, key: String)
+  class FromJs(rec: Record) {
 
-  @JSExportTopLevel("infra.SignUp")
-  case class SignUp(creds: Credentials)
+    trait MakeField
+    implicit def definedMakeField[
+      f <: rec.ScopedNamed[_],
+    ](
+      implicit
+      f: f
+    ): Defined[MakeField, f, Any ⇒ f.T] =
+      ???
 
-  @JSExportTopLevel("infra.LogIn")
-  case class LogIn(creds: Credentials)
+
+  }
+
 
 }

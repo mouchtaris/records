@@ -115,7 +115,18 @@ object Incubator {
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
 
-    Await.ready(infra.blue.http.Server.create().start(), 14.seconds).onComplete(println)
+    val server = infra.blue.http.Server()
+    val (started, ended) = server.start()
+    import akka.http.scaladsl.client
+    val request = client.RequestBuilding.Get("http://localhost:8080/index.html")
+    val done = started
+      .flatMap { _ ⇒ server.http.singleRequest(request) }
+      .flatMap { resp ⇒
+        println(resp)
+        ended
+      }
+      .map(_ ⇒ ())
+    Await.result(done, 4.seconds)
   }
   finally {
     db.close()

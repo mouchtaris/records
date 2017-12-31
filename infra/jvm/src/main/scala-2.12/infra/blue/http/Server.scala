@@ -40,7 +40,7 @@ object Server {
       complete("hi")
     }
 
-  def create()(
+  def apply()(
     implicit
     config: Config.Ext,
     system: ActorSystem,
@@ -50,7 +50,7 @@ object Server {
     val requestServed: Sink[(HttpRequest, HttpResponse), Future[Done]] =
       Sink.foreach {
         case (req, res) ⇒
-          println(s"HTTP $req $res")
+          println(s"HTTP\n  $req\n  $res")
           completeSignal.tryComplete(Success(NotUsed))
       }
     implicit val httpConfig = config.toServerConfig
