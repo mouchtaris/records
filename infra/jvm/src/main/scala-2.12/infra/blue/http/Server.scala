@@ -40,7 +40,7 @@ object Server {
       complete("hi")
     }
 
-  def apply()(
+  def apply(serveOne: Boolean, routes: Route*)(
     implicit
     config: Config.Ext,
     system: ActorSystem,
@@ -51,9 +51,11 @@ object Server {
       Sink.foreach {
         case (req, res) ⇒
           println(s"HTTP\n  $req\n  $res")
-          completeSignal.tryComplete(Success(NotUsed))
+          if (serveOne)
+            completeSignal.tryComplete(Success(NotUsed))
       }
     implicit val httpConfig = config.toServerConfig
+    val route: Route = Server.route ~ routes.reduce(_ ~ _)
     new http.Server(route, completeSignal.future, requestServed)
   }
 }

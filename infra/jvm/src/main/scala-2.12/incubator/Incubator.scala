@@ -115,18 +115,30 @@ object Incubator {
 
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
 
-    val server = infra.blue.http.Server()
+    val onlyOne = false
+    val server = infra.blue.http.Server(
+      serveOne = onlyOne,
+      routes = new gv.isi.junix.leon().routes("lol")
+    )
     val (started, ended) = server.start()
     import akka.http.scaladsl.client
-    val request = client.RequestBuilding.Get("http://localhost:8080/index.html")
+    val requests = {
+      import client.RequestBuilding.Get
+      Vector(
+        Get("http://localhost:8080/index.html"),
+        Get("http://localhost:8080/lol/hello"),
+        Get("http://localhost:8080/lol/nowhere"),
+      )
+    }
     val done = started
-      .flatMap { _ ⇒ server.http.singleRequest(request) }
-      .flatMap { resp ⇒
-        println(resp)
+      .map { _ ⇒ requests.map(server.http.singleRequest(_)) }
+      .flatMap { (reqs: Vector[Future[HttpResponse]]) ⇒ Future.sequence(reqs) }
+      .flatMap { resps ⇒
+        resps foreach println
         ended
       }
       .map(_ ⇒ ())
-    Await.result(done, 4.seconds)
+    Await.result(done, if (onlyOne) 4.seconds else Duration.Inf)
   }
   finally {
     db.close()
