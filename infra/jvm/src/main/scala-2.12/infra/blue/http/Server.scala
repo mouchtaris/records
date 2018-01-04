@@ -13,37 +13,27 @@ import
     Done,
     NotUsed,
   },
-  akka.actor.{
-    ActorSystem,
-  },
   akka.stream.{
     Materializer,
   },
   akka.stream.scaladsl.{
     Sink,
   },
-  akka.http.scaladsl.server.{
-    Directives,
-    Route,
+  akka.http.scaladsl.{
+    HttpExt,
   },
   akka.http.scaladsl.model.{
     HttpRequest,
     HttpResponse,
   },
-  Directives._,
   gv.{ http }
 
 object Server {
 
-  val route: Route =
-    (path("index.html") & get) {
-      complete("hi")
-    }
-
-  def apply(serveOne: Boolean, routes: Route*)(
+  def apply(serveOne: Boolean, handler: http.Handler)(
     implicit
     config: Config.Ext,
-    system: ActorSystem,
+    akkaHttp: HttpExt,
     materializer: Materializer,
   ): http.Server = {
     val completeSignal: Promise[NotUsed] = Promise()
@@ -55,8 +45,7 @@ object Server {
             completeSignal.tryComplete(Success(NotUsed))
       }
     implicit val httpConfig = config.toServerConfig
-    val route: Route = Server.route ~ routes.reduce(_ ~ _)
-    new http.Server(route, completeSignal.future, requestServed)
+    new http.Server(handler, completeSignal.future, requestServed)
   }
 }
 

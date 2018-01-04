@@ -1,9 +1,12 @@
 ---
-src:
-  main:
-    scala-2.12:
-      gv:
-        list:
-          conversions:
-          - TupleToList.scala
-          - ListToTuple.scala
+infestations:
+  shared:
+    src:
+      main:
+        scala-2.12:
+          gv:
+            list:
+              conversions:
+              - TupleToList.scala
+              - ListToTuple.scala
+plain: []

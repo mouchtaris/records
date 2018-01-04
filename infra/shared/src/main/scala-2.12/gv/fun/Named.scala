@@ -38,3 +38,4 @@ object Named {
   type of[t] = Named[_] { type T = t }
 
 }
+

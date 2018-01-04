@@ -19,13 +19,34 @@ import
     Await,
   },
   scala.concurrent.duration._,
-  scala.util.{ Try, Success, Failure },
+  scala.util.{
+    Try,
+    Success,
+    Failure,
+  },
+  scala.reflect.{
+    ClassTag,
+    classTag,
+  },
   org.jruby.embed.{
     ScriptingContainer,
   },
-  akka.{ Done, NotUsed },
-  akka.stream.{ Materializer },
-  akka.stream.scaladsl.{ Source, Sink, Flow },
+  akka.{
+    Done,
+    NotUsed,
+  },
+  akka.stream.{
+    Materializer,
+    FlowShape,
+  },
+  akka.stream.scaladsl.{
+    Source,
+    Sink,
+    Flow,
+    GraphDSL,
+    Broadcast,
+    Merge,
+  },
   lang._
 
 object Codegen {
@@ -53,68 +74,112 @@ object Codegen {
   def apply2[a, b, r](ab: ⇒ (a, b))(f: (a, b) ⇒ r): r =
     f.tupled(ab)
 
-  final case class Handler(template: Template, handler: Object) {
-    def handle(): Unit =
-      template.facade.engine.callMethod(handler, "handle!")
+  final implicit class ToRubyIterableDecoration(val self: Object) extends AnyVal {
+    def toRubyIterable(implicit facade: Facade) =
+      RubyIterable(facade, self)
   }
 
-  final case class Template(facade: Facade, template: Object) {
-    def handlers: Stream[Handler] =
-      facade
-        .handlers_for(template)
-        .map(Handler(this, _))
-        .toStream
+  final case class RubyIterable(facade: Facade, iterable: Object)
+    extends scala.collection.AbstractIterator[Object]
+  {
+    def hasNext: Boolean =
+      facade.engine.callMethod(iterable, "next?") match {
+        case b: java.lang.Boolean ⇒ b.booleanValue()
+        case _ ⇒ false
+      }
+    def next(): Object =
+      facade.engine.callMethod(iterable, "next!")
   }
+
+  sealed trait TemplateHandler extends AnyRef {
+    def facade: Facade
+    def handler: Object
+
+    def handle(): Unit =
+      facade.engine.callMethod(handler, "handle!")
+
+    val template: String =
+      facade.engine.callMethod(handler, "template").toString
+  }
+
+  final case class InfestationHandler(handler: Object)(implicit val facade: Facade)
+    extends AnyRef
+    with TemplateHandler
+
+  final case class PlainHandler(handler: Object)(implicit val facade: Facade)
+    extends AnyRef
+    with TemplateHandler
 
   final case class Facade(engine: ScriptingContainer, facade: Object) {
-    def templates: Stream[Template] =
-      engine
-        .callMethod(facade, "templates_java", classOf[Array[Object]])
-        .toStream
-        .map(Template(this, _))
+    implicit val implicitFacade: Facade = this
 
-    def handlers_for(template: Object): Array[Object] =
+    def handlers[T](typ: String)(wrap: Object ⇒ T): Stream[T] =
       engine
-        .callMethod(facade, "handlers_for_java", Array(template), classOf[Array[Object]])
+        .callMethod(facade, s"${typ}_iterable")
+        .toRubyIterable
+        .toStream
+        .map(wrap)
+
+    def infestations: Stream[InfestationHandler] =
+      handlers("infestations")(InfestationHandler(_))
+
+    def plain: Stream[PlainHandler] =
+      handlers("plain")(PlainHandler(_))
   }
 
-  val getFacade: Flow[ScriptingContainer, Facade, NotUsed] =
-    Flow fromFunction { jruby ⇒
+  val getFacadeFunction: ScriptingContainer ⇒ Facade = { jruby ⇒
       apply2(inputSource)(jruby.runScriptlet)
       val facade = jruby.get("Facade")
       Facade(jruby, facade)
     }
 
-  val getTemplates: Flow[Facade, Template, NotUsed] =
+  val getFacade: Flow[ScriptingContainer, Facade, NotUsed] =
+    Flow fromFunction getFacadeFunction
+
+  val getInfestations: Flow[Facade, InfestationHandler, NotUsed] =
     Flow
-      .fromFunction((_: Facade).templates)
+      .fromFunction((_: Facade).infestations)
       .flatMapMerge(8, Source.apply)
 
-  val getHandlers: Flow[Template, Handler, NotUsed] =
+  val getPlain: Flow[Facade, PlainHandler, NotUsed] =
     Flow
-      .fromFunction((_: Template).handlers)
+      .fromFunction((_: Facade).plain)
       .flatMapMerge(8, Source.apply)
 
-  val runHandler: Flow[Handler, Handler, NotUsed] = Flow fromFunction {
-    (_: Handler) tap (_ handle ())
+  val getHandlers: Flow[Facade, TemplateHandler, NotUsed] =
+    Flow fromGraph GraphDSL.create(
+      getInfestations.async,
+      getPlain.async,
+    )((_, _) ⇒ NotUsed) { implicit b ⇒ (infst, plain) ⇒
+      import GraphDSL.Implicits._
+      val bcast = b add Broadcast[Facade](2)
+      val merge = b add Merge[TemplateHandler](2)
+      bcast.out(0) ~> infst.in
+                      infst.out ~> merge.in(0)
+      bcast.out(1) ~> plain.in
+                      plain.out ~> merge.in(1)
+      FlowShape(bcast.in, merge.out)
+    }
+
+  val runHandler: Flow[TemplateHandler, TemplateHandler, NotUsed] = Flow fromFunction {
+    (_: TemplateHandler) tap (_ handle ())
   }
 
-  val process: Flow[ScriptingContainer, Handler, NotUsed] =
+  val process: Flow[ScriptingContainer, TemplateHandler, NotUsed] =
     getFacade.async
-      .via(getTemplates).async
       .via(getHandlers).async
       .via(runHandler).async
 
-  val recovery: Flow[Handler, Try[Handler], NotUsed] =
+  val recovery: Flow[TemplateHandler, Try[TemplateHandler], NotUsed] =
     Flow
-      .fromFunction { Success(_: Handler): Try[Handler] }
+      .fromFunction { Success(_: TemplateHandler): Try[TemplateHandler] }
       .recover { case ex ⇒ Failure(ex) }
       .async
 
-  val handleTemplate: Sink[Try[Handler], Future[Vector[Try[Handler]]]] =
-    Sink.fold(Vector.empty[Try[Handler]])(_ :+ _)
+  val handleTemplate: Sink[Try[TemplateHandler], Future[Vector[Try[TemplateHandler]]]] =
+    Sink.collection[Try[TemplateHandler], Vector[Try[TemplateHandler]]]
 
-  def processTemplates(jruby: ScriptingContainer)(implicit mat: Materializer): Future[Vector[Try[Handler]]] =
+  def processTemplates(jruby: ScriptingContainer)(implicit mat: Materializer): Future[Vector[Try[TemplateHandler]]] =
     Source single jruby via process via recovery runWith handleTemplate
 
   val MAX_WAIT = 10.seconds
@@ -147,9 +212,9 @@ final class Codegen(
       )
       .map {
         case Success(han) ⇒
-          s"[$GREEN OK$RESET ] ${han.template.template}"
+          s"[$GREEN OK$RESET ] ${han.template}"
         case Failure(ex) ⇒
-          s"[$RED FAIL$RESET ] $ex"
+          s"[$RED FAIL$RESET ] $ex\n${ex.stackTrace}"
       }
       .mkString("\n")
   }

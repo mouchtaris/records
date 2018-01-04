@@ -1,59 +1,27 @@
 package incubator
 
 import
+  java.nio.charset.StandardCharsets.UTF_8,
   scala.reflect.{
     ClassTag,
     classTag,
   },
-  scala.util.{
-    Success,
-    Failure,
-    Try,
-  },
   scala.concurrent.{
-    Future,
     Await,
     ExecutionContext,
     Promise,
+    Awaitable,
   },
   scala.concurrent.duration._,
   com.typesafe.config.{
     Config,
     ConfigFactory,
   },
-  akka.{
-    NotUsed,
-    Done,
-  },
-  akka.actor.{
-    ActorSystem,
-    Actor,
-    ActorRef,
-    Inbox,
-  },
-  akka.stream.{
-    ActorMaterializer,
-    UniformFanInShape,
-    UniformFanOutShape,
-    FlowShape,
-    SourceShape,
-    SinkShape,
-  },
-  akka.stream.scaladsl.{
-    Flow,
-    Sink,
-    Source,
-    GraphDSL,
-  },
   akka.http.scaladsl.server.{
     RequestContext,
   },
-  akka.http.scaladsl.model.{
-    HttpRequest,
-    HttpResponse,
-    Uri,
-  },
-  gv.{fun, lang, list, string, tag, types, record, config, util},
+  gv.{akkadecos, http, fun, lang, list, string, tag, types, record, config, util},
+  akkadecos._,
   list._,
   list.op._,
   string._,
@@ -63,17 +31,43 @@ import
   lang._,
   record._,
   config._,
-  util._
+  util._,
+  gv.isi.junix,
+  gv.isi.junix.leon.{
+    PackageSource,
+  },
+  akka.stream.{
+    Attributes,
+    ActorAttributes,
+    ClosedShape,
+  },
+  akka.stream.scaladsl.{
+    Balance,
+    Merge,
+    RunnableGraph,
+  },
+  akka.util.{
+    Timeout,
+  }
 
 import
-  scala.reflect.runtime.universe.{Select ⇒ _, _},
+  scala.reflect.runtime.universe.{Select ⇒ _, Try ⇒ _,  _},
   implicit_tricks._,
   package_named._,
   package_record._,
   package_weird._,
-  package_evidence._
+  package_evidence._,
+  package_async._
 
 object package_evidence
+
+object package_async {
+
+  final implicit class AwaitDecoration[T](val self: Awaitable[T]) extends AnyVal {
+    def await(implicit tm: Timeout) = Await ready (self, tm.duration)
+  }
+
+}
 
 object package_weird {
 
@@ -103,41 +97,66 @@ object Incubator {
 
   implicit val actorSystem = ActorSystem("Actoriliki")
   implicit val materializer = ActorMaterializer()
+  implicit val timeout = Timeout(14 seconds)
   val conf = ConfigFactory.defaultApplication()
   val dburi = conf getString "db.pat.staging"
-  implicit val httpconf: infra.blue.http.Config.Ext = conf
   lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db." + conf.getString("db.default"))
+  implicit val httpconf: infra.blue.http.Config.Ext = conf
+  implicit val peonconf: junix.peon.Config.Ext = conf getConfig "gv.peon"
+  implicit val leonconf = junix.leon.config.Config(conf getConfig "gv.leon")
+  implicit val httpExt = Http()
+  val Leon = new junix.leon.Leon
+  val handler: http.Handler = {
+    val toPrefix: String ⇒ Uri.Path = Uri.Path / _
+    val lamepm: http.Handler = Flow[HttpRequest] map { req ⇒ HttpResponse(entity = req.uri.toString) }
+    val handlers: Seq[(Uri.Path, http.Handler)] = Seq[(String, http.Handler)](
+      "leon" → Leon.httpHandler,
+      "peon" → (new junix.peon).route,
+      "lamepm" → lamepm,
+    )
+      .map { case (s, h) ⇒ toPrefix(s) → h }
+    val mplex = http.Multiplexor(handlers: _*)
+    mplex.handler
+    Leon.httpHandler
+  }
+  val onlyOne = true
+  val server = infra.blue.http.Server(
+    serveOne = onlyOne,
+    handler = handler,
+  )
 
   def main(args: Array[String]): Unit = try {
     import typebug.sinks.out
     import ExecutionContext.Implicits.global
     db;
 
-//    new gv.codegen.Codegen("/templates/manifest.yaml", "shared").run()
+//    new gv.codegen.Codegen("/templates/manifest.yaml", "infra").run()
+//    return
 
-    val onlyOne = false
-    val server = infra.blue.http.Server(
-      serveOne = onlyOne,
-      routes = new gv.isi.junix.leon().routes("lol")
-    )
     val (started, ended) = server.start()
-    import akka.http.scaladsl.client
-    val requests = {
-      import client.RequestBuilding.Get
-      Vector(
-        Get("http://localhost:8080/index.html"),
-        Get("http://localhost:8080/lol/hello"),
-        Get("http://localhost:8080/lol/nowhere"),
+    val requests = Vector(
+        "http://localhost:8080/index.html",
+        "http://localhost:8080/peon/hello",
+        "http://localhost:8080/peon/nowhere",
+        "http://localhost:8080/peon/redirect",
+        "http://localhost:8080/leon/arch/LOLIS",
+        "http://localhost:8080/leon/lame/ThisIsThEEnd",
+        "http://localhost:8080/lamepm/ThisIsTheFelnd",
+        "http://localhost:8080/leon/lame/ThisIsTheFelnd",
       )
-    }
+        .++((1 to 34) map ("http://localhost:8080/leon/arch/LOL" +))
+        .++((1 to 43) map ("http://localhost:8080/arch/LOL" +))
+      .map(RequestBuilding.Get(_))
+      .map(httpExt.singleRequest(_))
+
+    val download = Source(requests)
+      .mapAsync(1)(identity)
+      .toMat(Sink.collection[HttpResponse, Vector[HttpResponse]])(Keep.right)
+
     val done = started
-      .map { _ ⇒ requests.map(server.http.singleRequest(_)) }
-      .flatMap { (reqs: Vector[Future[HttpResponse]]) ⇒ Future.sequence(reqs) }
-      .flatMap { resps ⇒
-        resps foreach println
-        ended
-      }
-      .map(_ ⇒ ())
+      .flatMap { _ ⇒ download.run().map(_ foreach println) }
+      .flatMap { _ ⇒ println("downloading done"); ended }
+      .flatMap { _ ⇒ println("ending done"); Future successful (()) }
     Await.result(done, if (onlyOne) 4.seconds else Duration.Inf)
   }
   finally {

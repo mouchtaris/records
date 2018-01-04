@@ -16,10 +16,6 @@ import
     HttpRequest,
     HttpResponse,
   },
-  akka.http.scaladsl.server.{
-    Route,
-    RouteResult,
-  },
   akka.stream.{
     Attributes,
     FlowShape,
@@ -31,12 +27,6 @@ import
     GraphDSL,
     Broadcast,
     Zip,
-  },
-  akka.actor.{
-    ActorSystem,
-  },
-  akkastream.{
-    FlowDecoration,
   }
 
 object Server {
@@ -47,20 +37,19 @@ object Server {
 }
 
 class Server(
-  route: Route,
+  handler: Handler,
   completeSignal: Future[NotUsed],
   requestServed: Sink[(HttpRequest, HttpResponse), Future[Any]],
 )(
   implicit
-  system: ActorSystem,
+  http: HttpExt,
   materializer: Materializer,
   config: Config.Ext,
 ) {
 
   val routeFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
-    RouteResult
-      .route2HandlerFlow(route)
-      .withName("HTTP Request Handler Flow")
+    handler
+      .named("HTTP Request Handler Flow")
 
   val snifflingFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow.fromGraph {
@@ -82,10 +71,8 @@ class Server(
       }
     }
 
-  val http: HttpExt = Http()
-
   def start(): (Future[Server.Started], Future[Server.Ended]) = {
-    import system.dispatcher
+    import http.system.dispatcher
     val binding = http
       .bindAndHandle(
         interface = config.interface,
