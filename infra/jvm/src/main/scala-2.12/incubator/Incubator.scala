@@ -102,62 +102,17 @@ object Incubator {
   val dburi = conf getString "db.pat.staging"
   lazy val db = slick.jdbc.JdbcBackend.Database.forConfig("db." + conf.getString("db.default"))
   implicit val httpconf: infra.blue.http.Config.Ext = conf
-  implicit val peonconf: junix.peon.Config.Ext = conf getConfig "gv.peon"
-  implicit val leonconf = junix.leon.config.Config(conf getConfig "gv.leon")
   implicit val httpExt = Http()
-  val Leon = new junix.leon.Leon
-  val handler: http.Handler = {
-    val toPrefix: String ⇒ Uri.Path = Uri.Path / _
-    val lamepm: http.Handler = Flow[HttpRequest] map { req ⇒ HttpResponse(entity = req.uri.toString) }
-    val handlers: Seq[(Uri.Path, http.Handler)] = Seq[(String, http.Handler)](
-      "leon" → Leon.httpHandler,
-      "peon" → (new junix.peon).route,
-      "lamepm" → lamepm,
-    )
-      .map { case (s, h) ⇒ toPrefix(s) → h }
-    val mplex = http.Multiplexor(handlers: _*)
-    mplex.handler
-    Leon.httpHandler
-  }
-  val onlyOne = true
-  val server = infra.blue.http.Server(
-    serveOne = onlyOne,
-    handler = handler,
-  )
 
   def main(args: Array[String]): Unit = try {
     import typebug.sinks.out
     import ExecutionContext.Implicits.global
     db;
 
+
+
 //    new gv.codegen.Codegen("/templates/manifest.yaml", "infra").run()
 //    return
-
-    val (started, ended) = server.start()
-    val requests = Vector(
-        "http://localhost:8080/index.html",
-        "http://localhost:8080/peon/hello",
-        "http://localhost:8080/peon/nowhere",
-        "http://localhost:8080/peon/redirect",
-        "http://localhost:8080/leon/arch/LOLIS",
-        "http://localhost:8080/leon/lame/ThisIsThEEnd",
-        "http://localhost:8080/lamepm/ThisIsTheFelnd",
-        "http://localhost:8080/leon/lame/ThisIsTheFelnd",
-      )
-        .++((1 to 34) map ("http://localhost:8080/leon/arch/LOL" +))
-        .++((1 to 43) map ("http://localhost:8080/arch/LOL" +))
-      .map(RequestBuilding.Get(_))
-      .map(httpExt.singleRequest(_))
-
-    val download = Source(requests)
-      .mapAsync(1)(identity)
-      .toMat(Sink.collection[HttpResponse, Vector[HttpResponse]])(Keep.right)
-
-    val done = started
-      .flatMap { _ ⇒ download.run().map(_ foreach println) }
-      .flatMap { _ ⇒ println("downloading done"); ended }
-      .flatMap { _ ⇒ println("ending done"); Future successful (()) }
-    Await.result(done, if (onlyOne) 4.seconds else Duration.Inf)
   }
   finally {
     db.close()

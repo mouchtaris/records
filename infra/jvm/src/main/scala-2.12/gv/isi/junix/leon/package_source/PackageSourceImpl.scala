@@ -106,6 +106,7 @@ trait PackageSourceImpl
         val path: Path = root resolve s"$key$fullSuff"
         val exists: Boolean = Files exists path
         val result: Try[Key.T] = Success(key)
+        val length = path.toFile.length
 
         val maybe: Try[Key.T] =
           if (exists)
@@ -127,7 +128,7 @@ trait PackageSourceImpl
       val lock = new LockFile("lock")
       val fail = new LockFile("fail")
 
-      val pathResult: Try[Results.Found] = path.maybe map { key ⇒ Results.Found(key, openSource()) }
+      val pathResult: Try[Results.Found] = path.maybe map { key ⇒ Results.Found(key, path.length, openSource()) }
       val failResult: Try[Results.Failed] = fail.maybe map Results.Failed
       val laterResult: Try[Results.Later] = lock.maybe map Results.Later
 

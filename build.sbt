@@ -16,6 +16,7 @@ lazy val infra = crossProject(JVMPlatform, JSPlatform)
     AkkaStreamSettings.settings ++
     AkkaHttpSettings.settings ++
     JRubySettings.settings ++
+    ScalaPBSettings.settings ++
     Seq.empty
   }
   .jsSettings {

@@ -28,6 +28,7 @@ import
     HttpEntity,
     ContentTypes,
     StatusCodes,
+    HttpHeader,
   },
   akka.event.{
     LoggingAdapter,
@@ -66,14 +67,14 @@ trait MirrorHttpRequestHandling
         packageSource.apply
 
       val packageResultToHttpResponse: PartialFunction[PackageSource.Result, HttpResponse] = {
-        case PackageSource.Results.Found(key, source) ⇒
+        case PackageSource.Results.Found(key, length, source) ⇒
           log.info(s"Is found under $key")
           val entity = HttpEntity(
             data = source,
             contentType = ContentTypes.`application/octet-stream`
           )
           HttpResponse(
-            entity = entity
+            entity = entity,
           )
         case PackageSource.Results.Later(key) ⇒
           log debug s"Try later for $key"

@@ -1,6 +1,7 @@
 package incubation
 
 import
+  scalajs.js,
   scalajs.js.annotation._,
   gv.{
     list,
@@ -15,6 +16,10 @@ import
 @JSExportTopLevel("infra")
 @JSExportAll
 object Infra {
+
+  def poo = infra.AntePaliRecordsLib.tests.poo
+
+  def vargs(args: js.Object*): js.Array[js.Object] = js.Array(args: _*)
 
   class FromJs(rec: Record) {
 
