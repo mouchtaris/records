@@ -265,6 +265,7 @@ object AntePaliRecordsLib {
   object type_partial_function {
 
     trait TPF // Type Partial Function
+      extends Any
 
     sealed abstract class DefinedTpf[tpf <: TPF, -at] {
       type Out
