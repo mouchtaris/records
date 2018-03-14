@@ -81,33 +81,51 @@ object AntePaliRecordsLib {
           the[a :: b :: a :: b :: DummyImplicit :: b :: b :: b :: a :: DummyImplicit :: Nil] ::
           Nil
       the[ListFind[r1.type, is_type_tpf.IsTypeTpf[a :: b :: a :: List]]].apply(r1)
+      import tpf_compose._
+
       type apply[tpf <: TPF, at] = DefinedTpf[tpf, at]
-      trait `F.list.head` extends TPF
-      implicit def definedListHead[h]: DefinedTpf[`F.list.head`, h :: List] { type Out = h } =
-        DefinedTpf(_.head)
-      trait >>>[f <: TPF, g <: TPF] extends TPF
-      trait `F.list.tail` extends TPF
-      implicit def definedListTail[t <: List]: DefinedTpf[`F.list.tail`, _ :: t] { type Out = t } =
-        DefinedTpf(_.tail)
-      implicit def definedCompose[f <: TPF, g <: TPF, x, y](
-        implicit
-        f: DefinedTpf[f, x] { type Out <: y },
-        g: DefinedTpf[g, y]
-      ): DefinedTpf[f >>> g, x] { type Out = g.Out } =
-        DefinedTpf(x => g(f(x)))
-      type call[f <: TPF, at] = DefinedTpf[f, at]
       type IsT[T] = is_type_tpf.IsTypeTpf[T]
-      type lol = ListFind[r1.type, `F.list.head` >>> IsT[b]]
+      type lol = ListFind[r1.type, list_tpfs.Head >>> IsT[b]]
 
       val tinput = a() :: b() :: Nil 
-      type f1 = `F.list.head`
-      type f2 = `F.list.tail` >>> f1
+      type f1 = list_tpfs.Head
+      type f2 = list_tpfs.Tail  >>> f1
       type f3 = f2 >>> IsT[b]
       //the[f1 apply tinput.type].apply(tinput) ::
         //the[f2 apply tinput.type].apply(tinput) ::
         the[f3 apply tinput.type].apply(tinput) ::
         //the[(`F.list.head` >>> `F.list.head`) DefinedTpf tinput.type].apply(tinput) ::
         Nil
+    }
+  }
+
+  object tpf_compose {
+    import type_partial_function._
+
+    trait >>>[f <: TPF, g <: TPF] extends TPF
+
+    object >>> {
+      implicit def definedCompose[f <: TPF, g <: TPF, x, y](
+        implicit
+        f: DefinedTpf[f, x] { type Out <: y },
+        g: DefinedTpf[g, y]
+      ): DefinedTpf[f >>> g, x] { type Out = g.Out } =
+        DefinedTpf(x => g(f(x)))
+    }
+  }
+
+  object list_tpfs {
+    import list._
+    import type_partial_function._
+    trait Head extends TPF
+    object Head {
+      implicit def definedListHead[h]: DefinedTpf[Head, h :: List] { type Out = h } =
+        DefinedTpf(_.head)
+    }
+    trait Tail extends TPF
+    object Tail {
+      implicit def definedListTail[t <: List]: DefinedTpf[Tail, _ :: t] { type Out = t } =
+        DefinedTpf(_.tail)
     }
   }
 
