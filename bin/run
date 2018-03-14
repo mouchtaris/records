@@ -5,7 +5,16 @@ set -x
 SBT_OPTS=
 TERM=xterm
 
+app_conf="${APP_CONF:-infra/jvm/src/main/resources/application.conf}"
+main_class="${MAIN_CLASS:-incubator.totost}"
+
+if [[ ! -r "${app_conf}" || ! -f "${app_conf}" ]]
+then
+  printf '"%s" configuration file does not exist.\n' "${app_conf}" 1>&2
+  exit 1
+fi
+
 sbt \
   '; project infraJVM '\
-  '; set mainClass in Compile := Some("'"${MAIN_CLASS:-incubator.totost}"'") ' \
+  '; set mainClass in Compile := Some("'"${main_class}"'") ' \
   '; run '
