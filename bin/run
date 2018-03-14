@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -x
+
+SBT_OPTS=
+TERM=xterm
+
+sbt \
+  '; project infraJVM '\
+  '; set mainClass in Compile := Some("'"${MAIN_CLASS:-incubator.totost}"'") ' \
+  '; run '
