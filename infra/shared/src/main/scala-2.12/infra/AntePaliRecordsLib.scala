@@ -154,7 +154,8 @@ object AntePaliRecordsLib {
     object record
       extends AnyRef
         with typedefs {
-      final type GetEv[e[_ <: List] <: List, vals <: List, T <: Type] = ListFind[e[vals], FindGetterTpf[vals, T]] {type Out <: Getter[vals, T]}
+      final type GetEv[e[_ <: List] <: List, vals <: List, T <: Type] =
+        ListFind[e[vals], FindGetterTpf[vals, T]] {type Out <: Getter[vals, T]}
 
       final implicit class Closed[e[_ <: List] <: List, vals <: List](val vals: vals) extends AnyVal {
         def get[T <: Type](implicit e: e[vals], ev: GetEv[e, vals, T]): T#t = ev(e).apply(vals)
@@ -172,6 +173,7 @@ object AntePaliRecordsLib {
       def apply[vals <: List : e](vals: vals): record.Closed[e, vals] = vals
     }
 
+
   }
 
   object records_typedefs {
@@ -183,7 +185,9 @@ object AntePaliRecordsLib {
     trait typedefs extends Any {
       // Type of Evidence for Types
       final type Getter[vals <: List, T <: Type] = ListFind[vals, IsTypeTpf[T]] {type Out <: T#t}
+
       final type D[vals <: List, T <: Type] = Getter[vals, T]
+
       final type FindGetterTpf[vals <: List, T <: Type] = is_type_tpf.IsTypeTpf[Getter[vals, T]]
     }
 
@@ -412,5 +416,6 @@ object AntePaliRecordsLib {
   object The {
     def the[t <: AnyRef](implicit t: t): t.type = t
   }
+
 
 }
