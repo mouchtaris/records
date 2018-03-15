@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+SBT_OPTS=
+TERM=xterm
+
+/usr/bin/sbt "$@"

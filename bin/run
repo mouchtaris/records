@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# vim: et ts=2 sw=2
+
+main_class="$1"; shift
+
+if [[ -z "${main_class}" ]]
+then
+  printf 'Arg[0]: main_class\n' 1>&2
+  exit 1
+fi
+
+bin/sbt '
+ ; project infraJVM
+ ; set mainClass in Compile := Some("'"${main_class}"'")
+ ; ~ run
+'
