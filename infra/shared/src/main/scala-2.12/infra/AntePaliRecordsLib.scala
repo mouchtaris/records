@@ -1,8 +1,117 @@
 package infra
 
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
 object AntePaliRecordsLib {
+
+  object kog {
+    import
+      tests.{
+        email,
+        id,
+        created_at,
+        modified_at,
+      },
+      list.{
+        List,
+        ::,
+        Nil,
+      },
+      type_partial_function.{
+        TPF,
+        DefinedTpf,
+        Apply,
+      },
+      types.{
+        Type,
+      },
+      records_typedefs.{
+        typedefs ⇒ record_typedefs,
+      }
+    object record_typedefs extends record_typedefs
+    import
+      record_typedefs.{
+        D,
+      },
+      list_map.{
+        ListMap,
+      },
+      tpf_at.{
+        TpfAt,
+      },
+      list_find.{
+        ListFind,
+      },
+      types_is_type_tpf.{
+        IsTypeTpf,
+      },
+      The.{
+        the,
+      }
+
+    object phantom {
+      final implicit class Phantom[T](val self: Unit) extends AnyVal {
+        type t = T
+      }
+    }
+    import phantom.Phantom
+
+    object tpf_phantom_ext {
+      final implicit class PhantomDecoration(val self: phantom.type) extends AnyVal {
+        implicit def tpf[T, tpf <: TPF, x]: (tpf Apply x) { type Out = Phantom[T] } = DefinedTpf(_ ⇒ ())
+      }
+    }
+    import tpf_phantom_ext._
+
+    type GetterEvidence[T <: Type, vals <: List] = ListFind[vals, IsTypeTpf[T]] { type Out <: T#t }
+
+    trait MakeEvidenceTypeConstructor[T <: Type] extends Any with TPF
+    object MakeEvidenceTypeConstructor {
+      type Defined[T <: Type, vals <: List] = (MakeEvidenceTypeConstructor[T] Apply vals) {
+        type Out = Phantom[GetterEvidence[T, vals]]
+      }
+      implicit def `defined::MakeEvidenceTypeConstructor`[T <: Type, vals <: List]: Defined[T, vals] = phantom.tpf
+    }
+
+    trait `[ T ⇒ Bind[T] ]` extends TPF
+    object `[ T ⇒ Bind[T] ]` {
+      implicit def `defined[ T ⇒ Bind[T] ]`[T <: Type]: DefinedTpf[`[ T ⇒ Bind[T] ]`, T] { type Out = Phantom[MakeEvidenceTypeConstructor[T]] } =
+        DefinedTpf(_ ⇒ ())
+    }
+    type wbn[fields <: List] = (fields ListMap `[ T ⇒ Bind[T] ]`)
+
+
+    abstract class record[fields <: List](fields: fields)(
+      implicit
+      dummyImplicit: DummyImplicit,
+      final val ev: wbn[fields]
+    ) {
+      final type e[vals <: List] = ev.Out
+    }
+
+    case object account extends record(email :: id :: Nil)
+    case object timestamped extends record(created_at :: modified_at :: Nil)
+    val vals = modified_at(2018) :: email("bob@the.sponge") :: created_at(1821) :: id(666) :: Nil
+    type vals = vals.type
+
+
+    import scala.reflect.runtime.universe._
+    def omg = {
+      val otypos = typeOf[vals]
+
+      tdb.tdb(otypos)
+
+      //the[ account.e[vals] ] ::
+      Nil
+
+    }
+  }
+
+  object tpf_at {
+    import type_partial_function._
+
+    trait TpfAt[at, out] extends TPF
+  }
 
   object tests {
 
@@ -63,7 +172,7 @@ object AntePaliRecordsLib {
     //    """.stripMargin
     // }
 
-    final val poo = (
+    final def poo = (
     //   fortheaccount(vals),
     //   fortheaccount(true :: id(28) :: "Yes" :: modified_at(89) :: 12 :: created_at(2017) :: email("bob") :: Nil),
     //   fortheaccount(id(28) :: 12 :: modified_at(900) :: email("bob") :: true :: created_at(89) :: Nil),
@@ -71,31 +180,7 @@ object AntePaliRecordsLib {
     )
 
     def omg = {
-      implicit case object a { def apply() = a :: Nil }; type a = a.type :: Nil
-      implicit case object b { def apply() = b :: a :: a() :: Nil }; type b = b.type :: a.type :: a :: Nil
-      val r1 =
-        the[a] ::
-          the[b] ::
-          the[a :: b :: Nil] ::
-          the [b :: a :: Nil] ::
-          the[a :: b :: a :: b :: DummyImplicit :: b :: b :: b :: a :: DummyImplicit :: Nil] ::
-          Nil
-      the[ListFind[r1.type, is_type_tpf.IsTypeTpf[a :: b :: a :: List]]].apply(r1)
-      import tpf_compose._
-
-      type apply[tpf <: TPF, at] = DefinedTpf[tpf, at]
-      type IsT[T] = is_type_tpf.IsTypeTpf[T]
-      type lol = ListFind[r1.type, list_tpfs.Head >>> IsT[b]]
-
-      val tinput = a() :: b() :: Nil 
-      type f1 = list_tpfs.Head
-      type f2 = list_tpfs.Tail  >>> f1
-      type f3 = f2 >>> IsT[b]
-      //the[f1 apply tinput.type].apply(tinput) ::
-        //the[f2 apply tinput.type].apply(tinput) ::
-        the[f3 apply tinput.type].apply(tinput) ::
-        //the[(`F.list.head` >>> `F.list.head`) DefinedTpf tinput.type].apply(tinput) ::
-        Nil
+      kog.omg
     }
   }
 
@@ -276,6 +361,7 @@ object AntePaliRecordsLib {
 
       def apply(at: at): Out
     }
+    final type Apply[tpf <: TPF, -at] = DefinedTpf[tpf, at]
 
     object DefinedTpf {
       def apply[tpf <: TPF, at, out](f: at ⇒ out) =
