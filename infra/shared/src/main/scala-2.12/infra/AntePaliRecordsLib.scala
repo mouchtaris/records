@@ -48,38 +48,84 @@ object AntePaliRecordsLib {
     final val vals = modified_at(3000) :: id(12) :: created_at(1821) :: email("gamidi") :: Nil
     final type vals = vals.type
 
-    def fortheaccount[vals <: List : account.e : timestamped.e](vals: vals) = {
-      val acc = account(vals)
-      val ts = timestamped(vals)
-      s"""
-         | === Welcome to MENSA Biosystems, ${acc get email} ===
-         | * User ID: ${acc get id}
-         |
-         | You were created at ${ts get created_at} and you last
-         | changed your details at ${ts get modified_at}.
-         |
-         | Have a nice day,
-         | The curator system.
-       """.stripMargin
-    }
+    // def fortheaccount[vals <: List : account.e : timestamped.e](vals: vals) = {
+    //   val acc = account(vals)
+    //   val ts = timestamped(vals)
+    //   s"""
+    //      | === Welcome to MENSA Biosystems, ${acc get email} ===
+    //      | * User ID: ${acc get id}
+    //      |
+    //      | You were created at ${ts get created_at} and you last
+    //      | changed your details at ${ts get modified_at}.
+    //      |
+    //      | Have a nice day,
+    //      | The curator system.
+    //    """.stripMargin
+    // }
 
     final val poo = (
-      fortheaccount(vals),
-      fortheaccount(true :: id(28) :: "Yes" :: modified_at(89) :: 12 :: created_at(2017) :: email("bob") :: Nil),
-      fortheaccount(id(28) :: 12 :: modified_at(900) :: email("bob") :: true :: created_at(89) :: Nil),
+    //   fortheaccount(vals),
+    //   fortheaccount(true :: id(28) :: "Yes" :: modified_at(89) :: 12 :: created_at(2017) :: email("bob") :: Nil),
+    //   fortheaccount(id(28) :: 12 :: modified_at(900) :: email("bob") :: true :: created_at(89) :: Nil),
       omg
     )
 
     def omg = {
-      implicit case object a; type a = a.type
-      implicit case object b; type b = b.type
-      (
-        the[a],
-        the[b],
-        the[a :: b :: Nil],
-        the [b :: a :: Nil],
-        the[a :: b :: a :: b :: DummyImplicit :: b :: b :: b :: a :: DummyImplicit :: Nil]
-      )
+      implicit case object a { def apply() = a :: Nil }; type a = a.type :: Nil
+      implicit case object b { def apply() = b :: a :: a() :: Nil }; type b = b.type :: a.type :: a :: Nil
+      val r1 =
+        the[a] ::
+          the[b] ::
+          the[a :: b :: Nil] ::
+          the [b :: a :: Nil] ::
+          the[a :: b :: a :: b :: DummyImplicit :: b :: b :: b :: a :: DummyImplicit :: Nil] ::
+          Nil
+      the[ListFind[r1.type, is_type_tpf.IsTypeTpf[a :: b :: a :: List]]].apply(r1)
+      import tpf_compose._
+
+      type apply[tpf <: TPF, at] = DefinedTpf[tpf, at]
+      type IsT[T] = is_type_tpf.IsTypeTpf[T]
+      type lol = ListFind[r1.type, list_tpfs.Head >>> IsT[b]]
+
+      val tinput = a() :: b() :: Nil 
+      type f1 = list_tpfs.Head
+      type f2 = list_tpfs.Tail  >>> f1
+      type f3 = f2 >>> IsT[b]
+      //the[f1 apply tinput.type].apply(tinput) ::
+        //the[f2 apply tinput.type].apply(tinput) ::
+        the[f3 apply tinput.type].apply(tinput) ::
+        //the[(`F.list.head` >>> `F.list.head`) DefinedTpf tinput.type].apply(tinput) ::
+        Nil
+    }
+  }
+
+  object tpf_compose {
+    import type_partial_function._
+
+    trait >>>[f <: TPF, g <: TPF] extends TPF
+
+    object >>> {
+      implicit def definedCompose[f <: TPF, g <: TPF, x, y](
+        implicit
+        f: DefinedTpf[f, x] { type Out <: y },
+        g: DefinedTpf[g, y]
+      ): DefinedTpf[f >>> g, x] { type Out = g.Out } =
+        DefinedTpf(x => g(f(x)))
+    }
+  }
+
+  object list_tpfs {
+    import list._
+    import type_partial_function._
+    trait Head extends TPF
+    object Head {
+      implicit def definedListHead[h]: DefinedTpf[Head, h :: List] { type Out = h } =
+        DefinedTpf(_.head)
+    }
+    trait Tail extends TPF
+    object Tail {
+      implicit def definedListTail[t <: List]: DefinedTpf[Tail, _ :: t] { type Out = t } =
+        DefinedTpf(_.tail)
     }
   }
 
@@ -157,25 +203,24 @@ object AntePaliRecordsLib {
 
     object ListFind {
       type Aux[-L <: List, tpf <: TPF, out] = ListFind[L, tpf] {type Out = out}
+
+      implicit def findInHead[h, tpf <: TPF](implicit tpf: DefinedTpf[tpf, h]): Aux[h :: List, tpf, h] =
+        new ListFind[h :: List, tpf] {
+          type Out = h
+          val ev: tpf.type = tpf
+
+          def apply(list: h :: List): h = list.head
+        }
+
+      implicit def findInTail[t <: List, tpf <: TPF](implicit tev: ListFind[t, tpf]): Aux[_ :: t, tpf, tev.Out] =
+        new ListFind[_ :: t, tpf] {
+          type Out = tev.Out
+          val ev: tev.ev.type = tev.ev
+
+          def apply(list: _ :: t): Out = tev(list.tail)
+        }
+
     }
-
-    import ListFind.Aux
-
-    implicit def findInHead[h, tpf <: TPF](implicit tpf: DefinedTpf[tpf, h]): Aux[h :: List, tpf, h] =
-      new ListFind[h :: List, tpf] {
-        type Out = h
-        val ev: tpf.type = tpf
-
-        def apply(list: h :: List): h = list.head
-      }
-
-    implicit def findInTail[t <: List, tpf <: TPF](implicit tev: ListFind[t, tpf]): Aux[_ :: t, tpf, tev.Out] =
-      new ListFind[_ :: t, tpf] {
-        type Out = tev.Out
-        val ev: tev.ev.type = tev.ev
-
-        def apply(list: _ :: t): Out = tev(list.tail)
-      }
 
   }
 
@@ -221,7 +266,7 @@ object AntePaliRecordsLib {
 
     trait TPF // Type Partial Function
 
-    sealed abstract class DefinedTpf[tpf <: TPF, at] {
+    sealed abstract class DefinedTpf[tpf <: TPF, -at] {
       type Out
 
       def apply(at: at): Out
