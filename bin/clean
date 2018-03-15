@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# vim: et sw=2 ts=2
+
+rm -rfv \
+  ./infra/js/target \
+  ./infra/jvm/target \
+  ./infra/shared/target \
+  ./project/project/ \
+  ./project/target/ \
+  ./target/
