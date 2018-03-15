@@ -16,9 +16,11 @@ abstract class InitPlace(
     with InitActorSystem
     with InitStreamSystem
     with InitDatabase
+    with InitHttpServer
 {
   def config: InitConfig.Out
   def actorSystem: InitActorSystem.Out
   def streamSystem: InitStreamSystem.Out
   def database: InitDatabase.Out
+  def httpServer: InitHttpServer.Out
 }

@@ -15,6 +15,7 @@ class LazyInit(implicit ec: ExecutionContext) extends InitPlace {
   lazy val actorSystem = Init[ActorSystem]()
   lazy val streamSystem = Init[Materializer]()
   lazy val database = Init[DatabaseDef]()
+  lazy val httpServer = Init[http.server.Binding]()
 }
 
 

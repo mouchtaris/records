@@ -18,7 +18,7 @@ object config {
   final implicit class Config(val self: tsConfig) extends AnyVal {
 
     def root                : tsConfig                = self getConfig "infra.nineties"
-    def akkahttp            : details.akkahttp.Config = root getConfig "akkahttp"
+    def httpServer          : http.server.Config      = root getConfig "http.server"
     def akkaActorSystemName : String                  = root getString "akka_actor_system_name"
 
     def db                  : Db                      = self getConfig "db"
