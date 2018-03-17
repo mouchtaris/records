@@ -30,7 +30,11 @@ import
 
 class Main {
 
-  def run = ()
+  def run = {
+    implicit val initec = new init.InitEc(gv.util.now)
+    val inits = init.lz
+    println(inits.all)
+  }
 
 }
 

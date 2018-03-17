@@ -13,10 +13,12 @@ import
     ConfigFactory,
   }
 
-trait InitConfig {
+trait InitConfigMixin {
   this: InitPlace ⇒
 
-  implicit val InitConfig: init.Init[app.config.Config] = {
+  final type InitConfig = init.Init[app.config.Config]
+
+  final val InitConfig: InitConfig = {
     println(" ****** INITRACK: Init Config evidence ")
     () ⇒ {
       println(" ****** INITRACK create config promise")
@@ -28,4 +30,5 @@ trait InitConfig {
       }
     }
   }
+
 }

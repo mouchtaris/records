@@ -1,115 +1,12 @@
 package infra
 
 import scala.language.{higherKinds, implicitConversions}
+import apr._
 
 object AntePaliRecordsLib {
-
-  object kog {
-    import
-      tests.{
-        email,
-        id,
-        created_at,
-        modified_at,
-      },
-      list.{
-        List,
-        ::,
-        Nil,
-      },
-      type_partial_function.{
-        TPF,
-        DefinedTpf,
-        Apply,
-      },
-      types.{
-        Type,
-      },
-      records_typedefs.{
-        typedefs ⇒ record_typedefs,
-      }
-    object record_typedefs extends record_typedefs
-    import
-      record_typedefs.{
-        D,
-      },
-      list_map.{
-        ListMap,
-      },
-      tpf_at.{
-        TpfAt,
-      },
-      list_find.{
-        ListFind,
-      },
-      types_is_type_tpf.{
-        IsTypeTpf,
-      },
-      The.{
-        the,
-      }
-
-    object phantom {
-      final implicit class Phantom[T](val self: Unit) extends AnyVal {
-        type t = T
-      }
-    }
-    import phantom.Phantom
-
-    object tpf_phantom_ext {
-      final implicit class PhantomDecoration(val self: phantom.type) extends AnyVal {
-        implicit def tpf[T, tpf <: TPF, x]: (tpf Apply x) { type Out = Phantom[T] } = DefinedTpf(_ ⇒ ())
-      }
-    }
-    import tpf_phantom_ext._
-
-    type GetterEvidence[T <: Type, vals <: List] = ListFind[vals, IsTypeTpf[T]] { type Out <: T#t }
-
-    trait MakeEvidenceTypeConstructor[T <: Type] extends Any with TPF
-    object MakeEvidenceTypeConstructor {
-      type Defined[T <: Type, vals <: List] = (MakeEvidenceTypeConstructor[T] Apply vals) {
-        type Out = Phantom[GetterEvidence[T, vals]]
-      }
-      implicit def `defined::MakeEvidenceTypeConstructor`[T <: Type, vals <: List]: Defined[T, vals] = phantom.tpf
-    }
-
-    trait `[ T ⇒ Bind[T] ]` extends TPF
-    object `[ T ⇒ Bind[T] ]` {
-      implicit def `defined[ T ⇒ Bind[T] ]`[T <: Type]: DefinedTpf[`[ T ⇒ Bind[T] ]`, T] { type Out = Phantom[MakeEvidenceTypeConstructor[T]] } =
-        DefinedTpf(_ ⇒ ())
-    }
-    type wbn[fields <: List] = (fields ListMap `[ T ⇒ Bind[T] ]`)
-
-
-    abstract class record[fields <: List](fields: fields)(
-      implicit
-      dummyImplicit: DummyImplicit,
-      final val ev: wbn[fields]
-    ) {
-      final type e[vals <: List] = ev.Out
-    }
-
-    case object account extends record(email :: id :: Nil)
-    case object timestamped extends record(created_at :: modified_at :: Nil)
-    val vals = modified_at(2018) :: email("bob@the.sponge") :: created_at(1821) :: id(666) :: Nil
-    type vals = vals.type
-
-
-    import scala.reflect.runtime.universe._
-    def omg = {
-      val otypos = typeOf[vals]
-
-      tdb.tdb(otypos)
-
-      //the[ account.e[vals] ] ::
-      Nil
-
-    }
-  }
+  import tpf._
 
   object tpf_at {
-    import type_partial_function._
-
     trait TpfAt[at, out] extends TPF
   }
 
@@ -118,12 +15,8 @@ object AntePaliRecordsLib {
     import list._
     import types._
     import The._
-    import type_partial_function._
     import list_map._
     import list_find._
-    import types_is_type_tpf._
-    import list_implicit_construct._
-    import types_to_tagged_tpf._
     import records._
     import records_closure_ops._
 
@@ -180,61 +73,58 @@ object AntePaliRecordsLib {
     )
 
     def omg = {
-      kog.omg
     }
   }
 
   object tpf_compose {
-    import type_partial_function._
 
     trait >>>[f <: TPF, g <: TPF] extends TPF
 
     object >>> {
-      implicit def definedCompose[f <: TPF, g <: TPF, x, y](
+      type Defined[f <: TPF, g <: TPF, at, out] = Apply[f >>> g, at] { type Out = out }
+
+      implicit def defined[f <: TPF, g <: TPF, x, y](
         implicit
-        f: DefinedTpf[f, x] { type Out <: y },
-        g: DefinedTpf[g, y]
-      ): DefinedTpf[f >>> g, x] { type Out = g.Out } =
-        DefinedTpf(x => g(f(x)))
+        f: (f Apply x) { type Out <: y },
+        g: (g Apply y),
+      ): Defined[f, g, x, g.Out] =
+        Apply(x ⇒ g(f(x)))
     }
   }
 
   object list_tpfs {
     import list._
-    import type_partial_function._
     trait Head extends TPF
     object Head {
-      implicit def definedListHead[h]: DefinedTpf[Head, h :: List] { type Out = h } =
-        DefinedTpf(_.head)
+      implicit def definedListHead[h]: (Head Apply (h :: List)) { type Out = h } =
+        Apply(_.head)
     }
     trait Tail extends TPF
     object Tail {
-      implicit def definedListTail[t <: List]: DefinedTpf[Tail, _ :: t] { type Out = t } =
-        DefinedTpf(_.tail)
+      implicit def definedListTail[t <: List]: (Tail Apply (_ :: t)) { type Out = t } =
+        Apply(_.tail)
     }
   }
 
   object records_closure_ops {
 
     import list._
-    import types._
     import list_find._
-    import types_is_type_tpf._
+    import types.{ Type }
 
     final implicit class RecordClosureOpsDecoration[vals <: List](val vals: vals) extends AnyVal {
-      def get[T <: Type](implicit find: ListFind[vals, IsTypeTpf[T]] {type Out <: T#t}): T#t = find(vals)
+      def get[T <: Type](implicit find: ListFind[vals, infra.apr.types_tpf.IsType[T]] {type Out <: T#t}): T#t = find(vals)
 
-      def getType[T](implicit find: ListFind[vals, is_type_tpf.IsTypeTpf[T]] {type Out <: T}): T = find(vals)
+      def getType[T](implicit find: ListFind[vals, apr.tpf_lib.IsType[T]] {type Out <: T}): T = find(vals)
     }
 
   }
 
   object records {
     import records_typedefs._
-
-    import types._
     import list._
     import list_find._
+    import types._
 
     object record
       extends AnyRef
@@ -262,246 +152,19 @@ object AntePaliRecordsLib {
   }
 
   object records_typedefs {
-    import types._
     import list._
     import list_find._
-    import types_is_type_tpf._
+    import types.{ Type }
 
     trait typedefs extends Any {
       // Type of Evidence for Types
-      final type Getter[vals <: List, T <: Type] = ListFind[vals, IsTypeTpf[T]] {type Out <: T#t}
+      final type Getter[vals <: List, T <: Type] = ListFind[vals, infra.apr.types_tpf.IsType[T]] {type Out <: T#t}
 
       final type D[vals <: List, T <: Type] = Getter[vals, T]
 
-      final type FindGetterTpf[vals <: List, T <: Type] = is_type_tpf.IsTypeTpf[Getter[vals, T]]
+      final type FindGetterTpf[vals <: List, T <: Type] = apr.tpf_lib.IsType[Getter[vals, T]]
     }
 
   }
-
-  object list_find {
-
-    import list._
-    import type_partial_function._
-
-    trait ListFind[-L <: List, tpf <: TPF] {
-      type Out
-      implicit val ev: DefinedTpf[tpf, Out]
-
-      def apply(list: L): Out
-    }
-
-    object ListFind {
-      type Aux[-L <: List, tpf <: TPF, out] = ListFind[L, tpf] {type Out = out}
-
-      implicit def findInHead[h, tpf <: TPF](implicit tpf: DefinedTpf[tpf, h]): Aux[h :: List, tpf, h] =
-        new ListFind[h :: List, tpf] {
-          type Out = h
-          val ev: tpf.type = tpf
-
-          def apply(list: h :: List): h = list.head
-        }
-
-      implicit def findInTail[t <: List, tpf <: TPF](implicit tev: ListFind[t, tpf]): Aux[_ :: t, tpf, tev.Out] =
-        new ListFind[_ :: t, tpf] {
-          type Out = tev.Out
-          val ev: tev.ev.type = tev.ev
-
-          def apply(list: _ :: t): Out = tev(list.tail)
-        }
-
-    }
-
-  }
-
-  object list_map {
-
-    import list._
-    import type_partial_function._
-
-    trait ListMap[-L <: List, tpf <: TPF] {
-      type Out <: List
-
-      def apply(list: L): Out
-    }
-
-    object ListMap {
-      type Aux[-L <: List, tpf <: TPF, out <: List] = ListMap[L, tpf] {type Out = out}
-    }
-
-    import ListMap.Aux
-
-    implicit def nilMap[tpf <: TPF]: Aux[Nil, tpf, Nil] =
-      new ListMap[Nil, tpf] {
-        type Out = Nil
-
-        def apply(list: Nil): Nil = list
-      }
-
-    implicit def listMap[h, t <: List, tpf <: TPF, tpfOut, evOut <: List](
-      implicit
-      tpf: DefinedTpf[tpf, h] {type Out = tpfOut},
-      ev: ListMap[t, tpf] {type Out = evOut}
-    ): Aux[h :: t, tpf, tpfOut :: evOut] =
-      new ListMap[h :: t, tpf] {
-        type Out = tpf.Out :: ev.Out
-
-        def apply(list: h :: t): Out =
-          tpf(list.head) :: ev(list.tail)
-      }
-
-  }
-
-  object type_partial_function {
-
-    trait TPF // Type Partial Function
-      extends Any
-
-    sealed abstract class DefinedTpf[tpf <: TPF, -at] {
-      type Out
-
-      def apply(at: at): Out
-    }
-    final type Apply[tpf <: TPF, -at] = DefinedTpf[tpf, at]
-
-    object DefinedTpf {
-      def apply[tpf <: TPF, at, out](f: at ⇒ out) =
-        new DefinedTpf[tpf, at] {
-          type Out = out
-
-          def apply(at: at): Out = f(at)
-        }
-
-      final def empty[tpf <: TPF, at, out] =
-        new DefinedTpf[tpf, at] {
-          type Out = out
-
-          def apply(at: at): Out = ???
-        }
-    }
-
-  }
-
-  object types_is_type_tpf {
-
-    import types._
-    import type_partial_function._
-
-    sealed trait IsTypeTpf[T <: Type] extends TPF
-
-    final object IsTypeTpf {
-      type Defined[T <: Type, at, out] = DefinedTpf[IsTypeTpf[T], at] {type Out = out}
-
-      implicit def defined[T <: Type](implicit T: T): Defined[T, T.t, T.t] = DefinedTpf(t ⇒ t)
-    }
-
-  }
-
-  object types_to_tagged_tpf {
-
-    import types._
-    import type_partial_function._
-
-    sealed trait ToTaggedTpf extends TPF
-
-    object ToTaggedTpf {
-      final type Defined[at, out] = DefinedTpf[ToTaggedTpf, at] {type Out = out}
-
-      final implicit def defined[T <: Type](implicit T: T): Defined[T, T.t] = DefinedTpf.empty
-    }
-
-  }
-
-  object is_type_tpf {
-
-    import type_partial_function._
-
-    sealed trait IsTypeTpf[T] extends TPF
-
-    object IsTypeTpf {
-      final type Defined[T, at] = DefinedTpf[IsTypeTpf[T], at] {type Out = T}
-
-      implicit def defined[T, at](implicit ev: at <:< T): Defined[T, at] = DefinedTpf(t ⇒ t)
-    }
-
-  }
-
-  object types {
-
-    trait Type {
-      type Base
-
-      sealed trait Tag extends Any
-
-      final type Tagged = Base with Tag
-      final type t = Tagged
-
-      def apply(b: Base): Tagged = b.asInstanceOf[Tagged]
-
-      def unapply(t: Tagged): Option[Base] = Some(t)
-
-      implicit def implicitlyAvailable: this.type = this
-    }
-
-    trait TypeB[B] extends Type {
-      final type Base = B
-    }
-
-    object t {
-
-      trait String extends Type {
-        type Base = scala.Predef.String
-      } // TypeB[scala.Predef.String]
-      trait Int extends Type {
-        type Base = scala.Int
-      } // TypeB[scala.Int]
-      trait Boolean extends TypeB[scala.Boolean]
-
-    }
-
-  }
-
-  object list_implicit_construct {
-
-    import list._
-
-    implicit def implicitlyNil: Nil = Nil
-
-    implicit def implicitlyList[h, t <: List](
-      implicit
-      h: h,
-      t: t
-    ): h :: t =
-      h :: t
-  }
-
-  object list {
-
-    trait List
-
-    final case class ::[+a, +b <: List](
-      head: a,
-      tail: b
-    )
-      extends AnyRef
-        with List
-    {
-      override lazy val toString: String =
-        s"$head :: $tail"
-    }
-
-    final case object Nil extends List
-
-    final type Nil = Nil.type
-
-    final implicit class ListOps[+s <: List](val self: s) extends AnyVal {
-      def ::[h](head: h): h :: s = list.::(head, self)
-    }
-
-  }
-
-  object The {
-    def the[t <: AnyRef](implicit t: t): t.type = t
-  }
-
 
 }

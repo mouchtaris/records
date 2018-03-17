@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+stage="$1"; shift
+name="$1"; shift
+
+mkdir -pv infra/"$stage"/src/main/scala-2.12/"$name"
+

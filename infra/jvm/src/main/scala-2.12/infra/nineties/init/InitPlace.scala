@@ -3,24 +3,36 @@ package nineties
 package init
 
 import
-  scala.concurrent.{
-    ExecutionContext,
-  }
+  apr._,
+  list._
 
-abstract class InitPlace(
+sealed class InitPlace(
   implicit
-  protected[this] val executionContext: ExecutionContext
+  protected[this] val executionContext: InitEc
 )
   extends AnyRef
-    with InitConfig
-    with InitActorSystem
-    with InitStreamSystem
-    with InitDatabase
-    with InitHttpServer
+    with InitConfigMixin
+    with InitActorSystemMixin
+    with InitStreamSystemMixin
+    with InitDatabaseMixin
+    with InitHttpServerMixin
+    with coloured.Conversions
 {
-  def config: InitConfig.Out
-  def actorSystem: InitActorSystem.Out
-  def streamSystem: InitStreamSystem.Out
-  def database: InitDatabase.Out
-  def httpServer: InitHttpServer.Out
+  final lazy val config: InitConfig.t = ???
+  final lazy val actorSystem: InitActorSystem.t = ???
+  final lazy val streamSystem: InitStreamSystem.t = ???
+  final lazy val database: InitDatabase.t = ???
+  final lazy val httpServer: InitHttpServer.t = ???
+
+  final type All =
+    InitConfig.t ::
+    InitActorSystem.t ::
+    InitStreamSystem.t ::
+    InitDatabase.t ::
+    InitHttpServer.t ::
+    Nil
+  final lazy val all: All = ???
+
+  def wat = {
+  }
 }

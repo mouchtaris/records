@@ -5,7 +5,6 @@ import
   scala.concurrent.{
     Await,
     duration,
-    ExecutionContext,
     Future,
     TimeoutException,
   },
@@ -28,12 +27,12 @@ object AntePaliRecords {
     println(1 :: "hello" :: true :: Nil)
     println(AntePaliRecordsLib.tests.poo)
 
-    val httpServer = new HttpServer
-    catching(classOf[TimeoutException])
-      .toTry
-      .andFinally(httpServer.terminate()) {
-        Await.ready(Future.never, 5 seconds)
-      }
+    // val httpServer = new HttpServer
+    // catching(classOf[TimeoutException])
+    //   .toTry
+    //   .andFinally(httpServer.terminate()) {
+    //     Await.ready(Future.never, 5 seconds)
+    //   }
   }
 
   object HttpServer {

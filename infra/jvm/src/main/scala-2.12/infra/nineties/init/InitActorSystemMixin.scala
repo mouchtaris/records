@@ -7,13 +7,14 @@ import
     ActorSystem,
   }
 
-trait InitActorSystem {
+trait InitActorSystemMixin {
   this: InitPlace ⇒
 
   protected[this]
   final type ActorSystem = akka.actor.ActorSystem
 
-  implicit val InitActorSystem: init.Init[ActorSystem] =
+  final type InitActorSystem = init.Init[ActorSystem]
+  final implicit val InitActorSystem: InitActorSystem =
     () ⇒ config
       .map(_.akkaActorSystemName)
       .map(ActorSystem(_))

@@ -2,10 +2,11 @@ package infra
 package nineties
 package init
 
-trait InitHttpServer {
+trait InitHttpServerMixin {
   this: InitPlace ⇒
 
-  implicit val InitHttpServer: Init[http.server.Binding] =
+  final type InitHttpServer = Init[http.server.Binding]
+  final implicit val InitHttpServer: InitHttpServer =
     () ⇒
       config flatMap { _config ⇒
         actorSystem flatMap { implicit _system ⇒

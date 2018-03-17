@@ -7,13 +7,14 @@ import
     Database,
   }
 
-trait InitDatabase {
+trait InitDatabaseMixin {
   this: InitPlace ⇒
 
   protected[this]
   final type DatabaseDef = slick.jdbc.JdbcBackend.DatabaseDef
 
-  implicit val InitDatabase: Init[DatabaseDef] =
+  final type InitDatabase = Init[DatabaseDef]
+  implicit val InitDatabase: InitDatabase =
     () ⇒ config
       .map(_.db.url)
       .map(Database forURL _)
