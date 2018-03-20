@@ -6,10 +6,48 @@ import apr._
 object AntePaliRecordsLib {
   import tpf._
 
-  object tpf_at {
-    trait TpfAt[at, out] extends TPF
-  }
+  object kog {
+    import tests.{email, id, created_at, modified_at}
+    import list._
+    import types._
+    import list_map._
+    import list_find._
+    import The._
 
+    type FindGetter[vals <: List, T <: Type] = (vals ListFind types_tpf.IsType[T]) { type Out = T#t }
+
+    trait FieldEvidence[vals <: List] extends Any with TPF
+    object FieldEvidence {
+      type Defined[vals <: List, T <: Type] = FieldEvidence[vals] Apply T { type Out = FindGetter[vals, T] }
+      implicit def defined[vals <: List, T <: Type](
+        implicit
+        ev: vals FindGetter T,
+      ): Defined[vals, T] =
+        Apply(_ => ev)
+    }
+
+    abstract class record[fields <: List](fields: fields) {
+      final type e[vals <: List] = fields ListMap FieldEvidence[vals]
+    }
+
+    case object account extends record(email :: id :: Nil)
+    case object ABase; type ABase = ABase.type 
+    case object a extends TypeB[ABase]
+
+    def fr[vals <: List: account.e](vals: vals) = {
+    }
+
+    type accvals = email.t :: id.t :: Nil
+    val accvals: accvals = email("bob@spong.com") :: id(12) :: Nil
+    def omg = {
+      import tdb.tdb
+
+      implicitly[FindGetter[accvals, email]]
+      //implicitly[account.e[accvals.type]]
+    }
+
+  }
+ 
   object tests {
 
     import list._
@@ -73,6 +111,7 @@ object AntePaliRecordsLib {
     )
 
     def omg = {
+      kog.omg
     }
   }
 
@@ -89,20 +128,6 @@ object AntePaliRecordsLib {
         g: (g Apply y),
       ): Defined[f, g, x, g.Out] =
         Apply(x ⇒ g(f(x)))
-    }
-  }
-
-  object list_tpfs {
-    import list._
-    trait Head extends TPF
-    object Head {
-      implicit def definedListHead[h]: (Head Apply (h :: List)) { type Out = h } =
-        Apply(_.head)
-    }
-    trait Tail extends TPF
-    object Tail {
-      implicit def definedListTail[t <: List]: (Tail Apply (_ :: t)) { type Out = t } =
-        Apply(_.tail)
     }
   }
 
