@@ -13,12 +13,13 @@ object AntePaliRecordsLib {
     import list_map._
     import list_find._
     import The._
+    import list_last._
 
-    type FindGetter[vals <: List, T <: Type] = (vals ListFind types_tpf.IsType[T]) { type Out = T#t }
+    type FindGetter[vals <: List, T <: Type] = vals ListFind types_tpf.IsType[T]
 
     trait FieldEvidence[vals <: List] extends Any with TPF
     object FieldEvidence {
-      type Defined[vals <: List, T <: Type] = FieldEvidence[vals] Apply T { type Out = FindGetter[vals, T] }
+      type Defined[vals <: List, T <: Type] = (FieldEvidence[vals] Apply T) { type Out = vals FindGetter T }
       implicit def defined[vals <: List, T <: Type](
         implicit
         ev: vals FindGetter T,
@@ -26,7 +27,7 @@ object AntePaliRecordsLib {
         Apply(_ => ev)
     }
 
-    abstract class record[fields <: List](fields: fields) {
+    abstract class record[fields <: List](val fields: fields) {
       final type e[vals <: List] = fields ListMap FieldEvidence[vals]
     }
 
@@ -37,15 +38,64 @@ object AntePaliRecordsLib {
     def fr[vals <: List: account.e](vals: vals) = {
     }
 
-    type accvals = email.t :: id.t :: Nil
-    val accvals: accvals = email("bob@spong.com") :: id(12) :: Nil
+    //type accvals = email.t :: id.t :: Nil
+    val accvals = email("bob@spong.com") :: id(12) :: Nil
+    type accvals = accvals.type
     def omg = {
       import tdb.tdb
 
-      implicitly[FindGetter[accvals, email]]
+      val hms =
+        //implicitly[FindGetter[accvals, email]] ::
+        implicitly[FieldEvidence.Defined[accvals, email]] ::
+        implicitly[FieldEvidence.Defined[accvals, id]] ::
+        implicitly[FieldEvidence[accvals] Apply email.type] ::
+        implicitly[FieldEvidence[accvals] Apply id.type] ::
+        implicitly[(id.type :: Nil) ListMap FieldEvidence[accvals]] ::
+        Nil
+
+      implicitly[account.fields.type ListMap FieldEvidence[accvals]](
+        list_map.ListMap.listMap[email, id :: Nil, FieldEvidence[accvals]](
+          implicitly,
+          list_map.ListMap.listMap[id, Nil, FieldEvidence[accvals]]
+        )
+      )
+        //implicitly[ListMap[account.fields.type, FieldEvidence[accvals]]] ::
+        Nil
+
+      tdb[hms.type]
+      hms.head.apply(email).apply(accvals)
       //implicitly[account.e[accvals.type]]
     }
 
+  }
+
+  object list_last {
+    import list._
+
+    trait ListLast[-L <: List] extends Any {
+      type Out
+      def apply(list: L): Out
+    }
+    object ListLast {
+      type Last[L <: List, out] = ListLast[L] {
+        type Out = out
+      }
+      implicit def lastInHead[h]: (h :: Nil) Last h =
+        new ListLast[h :: Nil] {
+          type Out = h
+          def apply(list: h :: Nil) = list.head
+        }
+      implicit def lastInTail[t <: List](implicit ev: ListLast[t]): (_ :: t) Last ev.Out =
+        new ListLast[_ :: t] {
+          type Out = ev.Out
+          def apply(list: _ :: t) = ev(list.tail)
+        }
+    }
+    final implicit class ListLastDeco[self <: List](val self: self)
+      extends AnyVal
+    {
+      def last(implicit ev: ListLast[self]): ev.Out = ev(self)
+    }
   }
  
   object tests {

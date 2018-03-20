@@ -18,7 +18,11 @@ trait ListMap[-L <: List, +tpf <: TPF]
 
 object ListMap {
 
-  final implicit class Impl[L <: List, tpf <: TPF, out <: List](val self: L => out)
+  type Aux[L <: List, tpf <: TPF, out <: List] = (L ListMap tpf) {
+    type Out = out
+  }
+
+  final implicit class Impl[-L <: List, +tpf <: TPF, +out <: List](val self: L => out)
     extends AnyVal
       with ListMap[L, tpf]
   {
@@ -30,15 +34,15 @@ object ListMap {
 
   }
 
-  implicit def nilMap[tpf <: TPF]: Impl[Nil, tpf, Nil] =
+  implicit def nilMap[tpf <: TPF]: Aux[Nil, tpf, Nil] =
     (nil: Nil) =>
       nil
 
-  implicit def listMap[h, t <: List, tpf <: TPF, tpfOut, evOut <: List](
+  implicit def listMap[h, t <: List, tpf <: TPF](
     implicit
-    tpf: (tpf Apply h) { type Out = tpfOut },
+    tpf: (tpf Apply h),
     ev: (t ListMap tpf),
-  ): Impl[h :: t, tpf, tpfOut :: ev.Out] =
+  ): Aux[h :: t, tpf, tpf.Out :: ev.Out] =
     (list: h :: t) =>
       tpf(list.head) :: ev(list.tail)
 
