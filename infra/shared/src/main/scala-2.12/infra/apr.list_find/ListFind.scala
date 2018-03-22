@@ -7,7 +7,6 @@ import tpf._
 
 trait ListFind[-L <: List, tpf <: TPF]
   extends AnyRef
-    with TPF
 {
 
   type Out
@@ -15,7 +14,6 @@ trait ListFind[-L <: List, tpf <: TPF]
   implicit val ev: tpf Apply Out
 
   def apply(list: L): Out
-
 
 }
 
@@ -49,17 +47,5 @@ object ListFind {
       val ev = tev.ev
       def apply(l: _ :: t): Out = tev(l.tail)
     }
-
-
-  type Defined[L <: List, tpf <: TPF, out] =
-    ((L ListFind tpf) Apply L) {
-      type Out = out
-    }
-
-  implicit def `(List ListFind TPF) => TPF[ListFind]`[L <: List, tpf <: TPF](
-    implicit
-    ev: (L ListFind tpf)
-  ): Defined[L, tpf, ev.Out] =
-    Apply(ev(_))
 
 }

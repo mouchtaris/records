@@ -81,6 +81,8 @@ object tdb {
 
   def tdb(t: Type, indent: Indent = new Indent(0), dest: PrintWriter = new java.io.PrintWriter(System.out)): Unit = printAnalysis(t, indent, dest)
 
-  def tdb[T: TypeTag]: Unit = tdb(typeTag[T].tpe)
+  def tdb[T: TypeTag]: Unit = tdb(typeTag[T].tpe, new Indent(0))
+  def tdb[T: TypeTag](T: T): Unit = tdb[T]
+  def tdbw[T: WeakTypeTag]: Unit = tdb(weakTypeTag[T].tpe)
 
 }

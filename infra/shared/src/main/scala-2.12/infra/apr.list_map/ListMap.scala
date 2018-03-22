@@ -5,7 +5,7 @@ package list_map
 import list._
 import tpf._
 
-trait ListMap[-L <: List, +tpf <: TPF]
+trait ListMap[-L <: List, tpf <: TPF]
   extends Any
   with TPF
 {
@@ -22,7 +22,7 @@ object ListMap {
     type Out = out
   }
 
-  final implicit class Impl[-L <: List, +tpf <: TPF, +out <: List](val self: L => out)
+  final implicit class Impl[L <: List, tpf <: TPF, out <: List](val self: L => out)
     extends AnyVal
       with ListMap[L, tpf]
   {

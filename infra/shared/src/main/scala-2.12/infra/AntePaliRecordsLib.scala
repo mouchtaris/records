@@ -14,21 +14,36 @@ object AntePaliRecordsLib {
     import list_find._
     import The._
     import list_last._
+    import tdb.{ tdb }
 
-    type FindGetter[vals <: List, T <: Type] = vals ListFind types_tpf.IsType[T]
+    type FindGetter[vals <: List, T <: Type] = (vals ListFind types_tpf.IsType[T])
 
     trait FieldEvidence[vals <: List] extends Any with TPF
+
     object FieldEvidence {
-      type Defined[vals <: List, T <: Type] = (FieldEvidence[vals] Apply T) { type Out = vals FindGetter T }
+
+      type Defined[vals <: List, T <: Type, out] = (FieldEvidence[vals] Apply T) {
+        type Out = out
+      }
+
+      final implicit class Impl[vals <: List, T <: Type](val self: vals FindGetter T)
+        extends AnyVal
+          with (FieldEvidence[vals] Apply T)
+      {
+        type Out = vals FindGetter T
+        def apply(T: T): Out = self
+      }
+
       implicit def defined[vals <: List, T <: Type](
         implicit
-        ev: vals FindGetter T,
-      ): Defined[vals, T] =
-        Apply(_ => ev)
+        getter: vals FindGetter T,
+      ): Defined[vals, T, vals FindGetter T] =
+        new Impl(getter)
+
     }
 
-    abstract class record[fields <: List](val fields: fields) {
-      final type e[vals <: List] = fields ListMap FieldEvidence[vals]
+    abstract class record[fields <: AnyRef with List](val fields: fields) {
+      final type e[vals <: List] = fields.type ListMap FieldEvidence[vals]
     }
 
     case object account extends record(email :: id :: Nil)
@@ -38,33 +53,15 @@ object AntePaliRecordsLib {
     def fr[vals <: List: account.e](vals: vals) = {
     }
 
-    //type accvals = email.t :: id.t :: Nil
-    val accvals = email("bob@spong.com") :: id(12) :: Nil
-    type accvals = accvals.type
+    object vals {
+      val acc =
+        email("bob@sponge.com") ::
+        id(12) ::
+        Nil
+    }
+
     def omg = {
-      import tdb.tdb
-
-      val hms =
-        //implicitly[FindGetter[accvals, email]] ::
-        implicitly[FieldEvidence.Defined[accvals, email]] ::
-        implicitly[FieldEvidence.Defined[accvals, id]] ::
-        implicitly[FieldEvidence[accvals] Apply email.type] ::
-        implicitly[FieldEvidence[accvals] Apply id.type] ::
-        implicitly[(id.type :: Nil) ListMap FieldEvidence[accvals]] ::
-        Nil
-
-      implicitly[account.fields.type ListMap FieldEvidence[accvals]](
-        list_map.ListMap.listMap[email, id :: Nil, FieldEvidence[accvals]](
-          implicitly,
-          list_map.ListMap.listMap[id, Nil, FieldEvidence[accvals]]
-        )
-      )
-        //implicitly[ListMap[account.fields.type, FieldEvidence[accvals]]] ::
-        Nil
-
-      tdb[hms.type]
-      hms.head.apply(email).apply(accvals)
-      //implicitly[account.e[accvals.type]]
+      fr(vals.acc)
     }
 
   }
