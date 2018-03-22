@@ -83,6 +83,6 @@ object tdb {
 
   def tdb[T: TypeTag]: Unit = tdb(typeTag[T].tpe, new Indent(0))
   def tdb[T: TypeTag](T: T): Unit = tdb[T]
-  def tdbw[T: WeakTypeTag]: Unit = tdb(weakTypeTag[T].tpe)
+  def wtdb[T: WeakTypeTag]: Unit = tdb(weakTypeTag[T].tpe)
 
 }

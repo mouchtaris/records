@@ -14,43 +14,64 @@ object AntePaliRecordsLib {
     import list_find._
     import The._
     import list_last._
-    import tdb.{ tdb }
+    import tdb.{ tdb, wtdb }
 
-    type FindGetter[vals <: List, T <: Type] = (vals ListFind types_tpf.IsType[T])
 
-    trait FieldEvidence[vals <: List] extends Any with TPF
+    trait FieldEvidence[vals <: List]
+      extends Any
+      with TPF
 
     object FieldEvidence {
+      sealed trait bind[vals <: List, T <: Type]
+        extends Any
+      {
+        final type FindGetter = vals ListFind types_tpf.IsType[T]
 
-      type Defined[vals <: List, T <: Type, out] = (FieldEvidence[vals] Apply T) {
-        type Out = out
+        final type Evidence = FindGetter
+
+        final type Defined =
+          (FieldEvidence[vals] Apply T) {
+            type Out = Evidence
+          }
       }
 
-      final implicit class Impl[vals <: List, T <: Type](val self: vals FindGetter T)
+      final implicit class Impl[vals <: List, T <: Type](
+        val self: bind[vals, T]#Evidence
+      )
         extends AnyVal
-          with (FieldEvidence[vals] Apply T)
+        with (FieldEvidence[vals] Apply T)
       {
-        type Out = vals FindGetter T
+        type bound = bind[vals, T]
+        type Out = bound#Evidence
         def apply(T: T): Out = self
       }
 
       implicit def defined[vals <: List, T <: Type](
         implicit
-        getter: vals FindGetter T,
-      ): Defined[vals, T, vals FindGetter T] =
-        new Impl(getter)
-
+        evidence: bind[vals, T]#Evidence
+      ): Impl[vals, T] =
+        evidence
     }
 
-    abstract class record[fields <: AnyRef with List](val fields: fields) {
-      final type e[vals <: List] = fields.type ListMap FieldEvidence[vals]
+
+    final implicit class Closure[e[_ <: List], vals <: List](val self: vals) extends AnyVal {
     }
 
-    case object account extends record(email :: id :: Nil)
-    case object ABase; type ABase = ABase.type 
-    case object a extends TypeB[ABase]
+    sealed trait record[_fields <: List] extends Any {
+      final type fields = _fields
+      final type e[vals <: List] = (fields ListMap FieldEvidence[vals])
+      final def apply[vals <: List](vals: vals): Closure[e, vals] = vals
+    }
+
+    object record {
+      final implicit class Impl[f <: List](val self: f) extends AnyVal with record[f]
+      def apply[fields <: List](fields: fields): Impl[fields] = fields
+    }
+
+    final implicit val account = record(email :: id :: Nil)
 
     def fr[vals <: List: account.e](vals: vals) = {
+      account(vals)
     }
 
     object vals {
@@ -61,7 +82,8 @@ object AntePaliRecordsLib {
     }
 
     def omg = {
-      fr(vals.acc)
+      // fr(vals.acc)
+      infra.apr.wat.omg
     }
 
   }

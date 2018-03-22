@@ -7,7 +7,6 @@ import tpf._
 
 trait ListMap[-L <: List, tpf <: TPF]
   extends Any
-  with TPF
 {
 
   type Out <: List
@@ -46,16 +45,4 @@ object ListMap {
     (list: h :: t) =>
       tpf(list.head) :: ev(list.tail)
 
-
-  type Defined[L <: List, tpf <: TPF, out] =
-    (ListMap[L, tpf] Apply L) {
-      type Out = out
-    }
-
-  implicit def `(List, TPF) => ListMap`[L <: List, tpf <: TPF](
-    implicit
-    ev: (L ListMap tpf)
-  ): ((L ListMap tpf) Apply L) { type Out = ev.Out } =
-    Apply(ev(_))
 }
-
