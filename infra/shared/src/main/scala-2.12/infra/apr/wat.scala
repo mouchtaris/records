@@ -3,53 +3,26 @@ package apr
 
 object wat {
 
-  trait apply[pf, -x] extends Any { type result }
-  object apply extends apply_impl.companion
-
-  trait resultU[u, r <: u] extends Any { final type result = r }
-  trait result[r] extends Any with resultU[Any, r]
-
-  trait ==>[a, r] extends Any
-  object ==> extends `==>_impl`.companion
-
+  import The._
   import apr.list.{ List, ::, Nil }
+  import tdb._
 
-  trait list extends Any
-  trait head extends Any
-  object head {
-    implicit def defined[h]: (head apply (h :: List)) ==> h =
-      ==>.fromApplicationAndResult {
-        (_ : h :: List).head
-      }
+  final class :=[pf, sig](val self: sig) extends AnyVal {
+    final def apply[x, r](x: x)(implicit ev: sig <:< (x => r)): r = self(x)
   }
-  trait tail extends Any
-  object tail {
-    implicit def defined[t <: List]: (tail apply (_ :: t)) with result[t] = apply()
+
+  trait head
+  implicit def `list::head`[h]
+  : head := ( (h :: List) => h ) =
+    new :=(_.head)
+
+  final implicit class HeadDeco[s](val self: s) extends AnyVal {
+    def head[h](implicit ev: head := (s => h)): h = ev(self)
   }
 
 
   def omg = {
-    implicitly[ head apply (Int :: Nil) ]
+    ("Helo worl" :: true :: "bobo" :: "omg again" :: 12 :: Nil).head
   }
 
-}
-
-object apply_impl {
-  implicit class Impl[pf, x, r](val self: Unit)
-    extends AnyVal
-      with wat.apply[pf, x]
-      with wat.result[r]
-  trait companion {
-    implicit def apply[pf, x, r](): Impl[pf, x, r] = ()
-  }
-}
-
-object `==>_impl` {
-  import wat._
-
-  trait companion {
-    implicit def fromApplicationAndResult[pf, x, r](
-      f: x => r
-    ): (pf apply x) ==> r = ???
-  }
 }
