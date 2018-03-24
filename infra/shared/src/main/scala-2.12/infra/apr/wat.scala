@@ -19,6 +19,22 @@ import wats._
   }
 
 
+  trait bound[pf] extends Any; object bound {
+    implicit def defined[pf, x, r](
+      implicit
+      d: DummyImplicit,
+      pf: at[pf, x, r],
+    ): at[bound[pf], x, pf.result] =
+      pf.apply _
+
+    final implicit class Impl[pf](val self: Unit) extends AnyVal with bound[pf]
+    def apply[pf](): Impl[pf] = ()
+  }
+
+
+
+
+
   type FindGetter[vals, T] = list_select[find_type[T]] * vals
   type FieldEvidence[vals, T] = FindGetter[vals, T]
 
@@ -31,11 +47,14 @@ import wats._
       _ => ev
   }
   abstract class record[fields](val fields: fields) {
-    def apply[vals](vals: vals)(
+    // field_evidence[vals] = F => bind >>+> find_type >>+> list_select >>+> apply[vals]     // evidence[ list_select[bind[find_type]] ] * vals
+    type e[vals] = list_select[field_evidence[vals]] * fields
+    class Closure[vals, evs](val vals: vals, val evs: evs)
+    def apply[vals, evs](vals: vals)(
       implicit
       d: DummyImplicit,
-      evs: list_select[field_evidence[vals]] * fields,
-    ) = evs(fields)
+      evs: at[ list_select[field_evidence[vals]], fields, evs],
+    ): Closure[vals, evs] = new Closure(vals, evs(fields))
   }
 
 
@@ -54,12 +73,16 @@ import wats._
       (t: T.t) => t
   }
 
+  def doacc[vals: account.e](vals: vals): Any = {
+    val acc = account(vals)
+    acc
+  }
 
   val vals = email("bob") :: id(12) :: Nil
   type vals = vals.type
   def omg: Any = {
     val wat = (
-      account(vals),
+      doacc(vals)
     )
     tdb(wat)
     wat
