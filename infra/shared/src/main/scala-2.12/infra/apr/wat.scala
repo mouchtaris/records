@@ -18,20 +18,10 @@ import wats._
     final type result = r
   }
 
-
-  trait bound[pf] extends Any; object bound {
-    implicit def defined[pf, x, r](
-      implicit
-      d: DummyImplicit,
-      pf: at[pf, x, r],
-    ): at[bound[pf], x, pf.result] =
-      pf.apply _
-
-    final implicit class Impl[pf](val self: Unit) extends AnyVal with bound[pf]
-    def apply[pf](): Impl[pf] = ()
+  trait evidence[e[_]] extends Any; object evidence {
+    implicit def defined[e[_], x](implicit e: e[x]): at[evidence[e], x, e[x]] =
+      _ => e
   }
-
-
 
 
 
@@ -47,7 +37,6 @@ import wats._
       _ => ev
   }
   abstract class record[fields](val fields: fields) {
-    // field_evidence[vals] = F => bind >>+> find_type >>+> list_select >>+> apply[vals]     // evidence[ list_select[bind[find_type]] ] * vals
     type e[vals] = list_select[field_evidence[vals]] * fields
     class Closure[vals, evs](val vals: vals, val evs: evs)
     def apply[vals, evs](vals: vals)(
