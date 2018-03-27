@@ -1,6 +1,7 @@
 package infra
 package apr
 
+import scala.reflect.runtime.universe.{ TypeTag }
 import The._
 import apr.list.{ List, ::, Nil }
 import tdb._
@@ -18,12 +19,18 @@ import wats._
     final type result = r
   }
 
+
   trait evidence[e[_]] extends Any; object evidence {
-    implicit def defined[e[_], x](implicit e: e[x]): at[evidence[e], x, e[x]] =
-      _ => e
+    implicit def defined[e[_], x](
+      implicit
+      d: DummyImplicit,
+      e: e[x],
+    ): at[evidence[e], x, e[x]] =
+      new at[evidence[e], x, e[x]] {
+        def apply(x: x): e[x] = e
+        override def toString: String = s"evidence[$e]"
+      }
   }
-
-
 
   type FindGetter[vals, T] = list_select[find_type[T]] * vals
   type FieldEvidence[vals, T] = FindGetter[vals, T]
@@ -37,9 +44,11 @@ import wats._
       _ => ev
   }
   abstract class record[fields](val fields: fields) {
-    type e[vals] = list_select[field_evidence[vals]] * fields
-    class Closure[vals, evs](val vals: vals, val evs: evs)
-    def apply[vals, evs](vals: vals)(
+    final type e[vals] = list_select[field_evidence[vals]] * fields
+    final class Closure[vals, evs](val vals: vals, val evs: evs) {
+
+    }
+    final def apply[vals, evs](vals: vals)(
       implicit
       d: DummyImplicit,
       evs: at[ list_select[field_evidence[vals]], fields, evs],
@@ -59,22 +68,18 @@ import wats._
     def apply[T]: Impl[T] = ()
     def apply[T](T: T): Impl[T] = apply[T]
     implicit def `find_type * T`[T <: Type](implicit T: T): at[find_type[T], T.t, T.t] =
-      (t: T.t) => t
+      new at[find_type[T], T.t, T.t] {
+        def apply(t: T.t): T.t = t
+        override def toString: String = s"find_type[$T]"
+      }
   }
 
-  def doacc[vals: account.e](vals: vals): Any = {
-    val acc = account(vals)
-    acc
-  }
-
-  val vals = email("bob") :: id(12) :: Nil
+  val vals = email("bob@sponge.com") :: id(12) :: Nil
   type vals = vals.type
   def omg: Any = {
-    val wat = (
-      doacc(vals)
+    (
+      implicitly[account.e[vals]]
     )
-    tdb(wat)
-    wat
   }
 
 }
@@ -105,14 +110,20 @@ trait pkg_list_select {
       implicit
       d: DummyImplicit
     ): at[list_select[pred], Nil, Nil] =
-      nil => nil
+      new at[list_select[pred], Nil, Nil] {
+        def apply(nil: Nil): Nil = nil
+        override def toString: String = "list_select[Nil]"
+      }
     implicit def `list_select at not_defined[pf]`[pred, list, t, tsel](
       implicit
       d: DummyImplicit,
       tail: at[tail, list, t],
       tsel: at[list_select[pred], t, tsel],
     ): at[list_select[pred], list, tsel] =
-      list => tsel(tail(list))
+      new at[list_select[pred], list, tsel] {
+        def apply(list: list): tsel = tsel(tail(list))
+        override def toString: String = s"list_no_select :: $tsel"
+      }
   }
   trait ListSelectHigh extends Any {
     implicit def `list_select at defined[pf]`[pred, list, h, t, hr, tsel <: List](
@@ -123,7 +134,10 @@ trait pkg_list_select {
       pred: at[pred, h, hr],
       tsel: at[list_select[pred], t, tsel],
     ): at[list_select[pred], list, hr :: tsel] =
-      list => pred(head(list)) :: tsel(tail(list))
+      new at[list_select[pred], list, hr :: tsel] {
+        def apply(list: list): hr :: tsel = pred(head(list)) :: tsel(tail(list))
+        override def toString: String = s"list_select[$pred] :: $tsel"
+      }
   }
   object list_select extends AnyRef
     with ListSelectLow

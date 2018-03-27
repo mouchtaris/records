@@ -79,7 +79,25 @@ object tdb {
     ps flush()
   }
 
-  def tdb(t: Type, indent: Indent = new Indent(0), dest: PrintWriter = new java.io.PrintWriter(System.out)): Unit = printAnalysis(t, indent, dest)
+  object TdbOnce {
+    var done: Boolean = false
+    def apply(
+      t: Type,
+      indent: Indent = new Indent(0),
+      dest: PrintWriter = new java.io.PrintWriter(System.out)
+    ): Unit = {
+      if (done)
+        return
+      done = true
+      printAnalysis(t, indent, dest)
+    }
+  }
+  def tdb(
+    t: Type,
+    indent: Indent = new Indent(0),
+    dest: PrintWriter = new java.io.PrintWriter(System.out)
+  ): Unit =
+    TdbOnce(t, indent, dest)
 
   def tdb[T: TypeTag]: Unit = tdb(typeTag[T].tpe, new Indent(0))
   def tdb[T: TypeTag](T: T): Unit = tdb[T]
