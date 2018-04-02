@@ -17,48 +17,60 @@ import wats._
 
 
 
-  case object email extends t.String
-  case object id extends t.Int
-  type email = email.type
-  type id = id.type
+  sealed trait email extends t.String
+  sealed trait id extends t.Int
+  final case object email extends email
+  final case object id extends id
+
+  val vals = email("bob@sponge.com") :: Nil
+  type vals = vals.type
+  type Vals = email.t :: Nil
 
   trait record extends Any {
-    trait Def
+    type e[vals]
+
+    final type d[vals, T, t] =
+      at[ list_select[find_type[T]], vals, t :: Nil ] ::
+      Nil
   }
 
   final case object account extends record {
-    final class Closure[vals](
-      val vals: vals, 
-      val defs:
-        at[ list_select[find_type[email ]], vals, email.t :: Nil ] ::
-        at[ list_select[find_type[id    ]], vals, id.t    :: Nil ] ::
-        Nil,
 
-      def get[T <: Type] = ???
-    )
-    def apply[vals](vals: vals)(
+    type e[vals] =
+      d[vals, email, email.t] ::
+      Nil
+
+    def get[T <: Type, vals](T: T)(vals: vals)(
       implicit
-      get_email: at[list_select[find_type[email]], vals, email.t :: Nil],
-      get_id: at[list_select[find_type[id]], vals, id.t :: Nil],
-    ): Closure[vals] =
-      new Closure(vals, 
-        get_email ::
-        get_id ::
-        Nil
-      )
+      d: DummyImplicit,
+      evs: e[vals],
+      getter: at[ list_select[is_type[d[vals, T, T.t]]], e[vals], d[vals, T, T.t] :: Nil ],
+    ): T.t =
+      ???
   }
-  final type account = account.type
 
-
-  val vals = email("bob@sponge.com") :: id(12) :: Nil
-  type vals = vals.type
-  type Vals = email.t :: id.t :: Nil
-
-  def doacc[vals: account.Closure](vals: vals): Any = {
+  def doacc[vals: account.e](vals: vals): Any = {
+    implicitly[at[
+      is_type[account.d[vals, email, email.t]],
+      account.d[vals, email, email.t],
+      account.d[vals, email, email.t],
+    ]]
+    val lol = implicitly[at[
+      list_select[is_type[account.d[vals,email, email.t]]],
+      account.e[vals],
+      account.d[vals, email, email.t] :: Nil 
+    ]]
+    account.get(email)(vals)(
+      implicitly,
+      implicitly,
+      lol,
+    )
   }
+
   def omg: Any = {
-    account(vals)
+    doacc(vals)
   }
+
 
 }
 import wat._
@@ -91,12 +103,12 @@ trait pkg_find_type {
 
 }
 
-trait pkg_is_type {
+trait pkg_conforms {
   this: Any
     =>
 
-  sealed trait is_type[T] extends Any; object is_type {
-    implicit def defined[T]: at[is_type[T], T, T] =
+  sealed trait <:<*[T] extends Any; object <:<* {
+    implicit def defined[T, x](implicit ev: x <:< T): at[<:<*[T], x, T] =
       x => x
   }
 }
@@ -137,33 +149,29 @@ trait pkg_list_select {
         def apply(nil: Nil): Nil = nil
         override def toString: String = "list_select[Nil]"
       }
-    implicit def `list_select at not_defined[pf]`[pred, list, t, tsel](
+    implicit def `list_select at not_defined[pf]`[pred, t <: List, tsel](
       implicit
       d: DummyImplicit,
-      tail: at[tail, list, t],
       tsel: at[list_select[pred], t, tsel],
-    ): at[list_select[pred], list, tsel] =
-      new at[list_select[pred], list, tsel] {
-        def apply(list: list): tsel = tsel(tail(list))
+    ): at[list_select[pred], _ :: t, tsel] =
+      new at[list_select[pred], _ :: t, tsel] {
+        def apply(list: _ :: t): tsel = tsel(list.tail)
         override def toString: String = s"list_no_select :: $tsel"
       }
   }
-  trait ListSelectHigh extends Any {
-    implicit def `list_select at defined[pf]`[pred, list, h, t, hr, tsel <: List](
+  trait ListSelectHigh extends Any with ListSelectLow {
+    implicit def `list_select at defined[pf]`[pred, h, t <: List, hr, tsel <: List](
       implicit
       d: DummyImplicit,
-      head: at[head, list, h],
-      tail: at[tail, list, t],
       pred: at[pred, h, hr],
       tsel: at[list_select[pred], t, tsel],
-    ): at[list_select[pred], list, hr :: tsel] =
-      new at[list_select[pred], list, hr :: tsel] {
-        def apply(list: list): hr :: tsel = pred(head(list)) :: tsel(tail(list))
+    ): at[list_select[pred], h :: t, hr :: tsel] =
+      new at[list_select[pred], h :: t, hr :: tsel] {
+        def apply(list: h :: t): hr :: tsel = pred(list.head) :: tsel(list.tail)
         override def toString: String = s"list_select[$pred] :: $tsel"
       }
   }
   object list_select extends AnyRef
-    with ListSelectLow
     with ListSelectHigh
   {
     import wats.{ list_select_impl => Impl }
@@ -190,6 +198,26 @@ trait pkg_eval {
   def eval[pf, x, r](pf: pf, x: x)(implicit ev: at[pf, x, r]): r = eval[pf](x)
 }
 
+trait pkg_weird_application {
+  
+  trait WeirdApplicationOps[self] extends Any {
+    def self: self
+    final def >::>[r](f: self => r): r = f(self)
+  }
+
+}
+
+trait pkg_is_type {
+
+  sealed trait is_type[T] extends Any; object is_type {
+
+    implicit def `is_type[T] * T`[T]: at[ is_type[T], T, T] =
+      T => T
+
+  }
+
+}
+
 object wats extends AnyRef
   with pkg_list
   with pkg_list_select
@@ -197,6 +225,8 @@ object wats extends AnyRef
   with pkg_eval
   with pkg_list_find
   with pkg_find_type
+  with pkg_conforms
+  with pkg_weird_application
   with pkg_is_type
 {
 
@@ -214,6 +244,7 @@ object wats extends AnyRef
   final implicit class Evaluator[pf](val self: Unit) extends AnyVal {
     def apply[x, r](x: x)(implicit pf: at[pf, x, r]): r = pf(x)
   }
+  final implicit class WeirdApplicationDeco[self](val self: self) extends AnyVal with WeirdApplicationOps[self]
 
 }
 
