@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require_relative '../lib/tp'
+
+require 'pp'
+
+par = Parser.new(Lexer.new(STDIN)).parse!
