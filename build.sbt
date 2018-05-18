@@ -10,5 +10,9 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
       ScalacSettings.settings ++
       Seq.empty
     }
+  .jvmSettings(
+    GoogleSettings.settings ++
+    Seq.empty
+  )
 lazy val raptureJVM = rapture.jvm
 lazy val raptureJS = rapture.js

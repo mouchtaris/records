@@ -1,3 +1,7 @@
+import
+  sbt._,
+  Keys._
+
 object AkkaSettings {
 
   val AkkaVersion = "2.5.8"
