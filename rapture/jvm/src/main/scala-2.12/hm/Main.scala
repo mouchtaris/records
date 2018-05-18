@@ -14,5 +14,6 @@ object Main {
     model.Email("ol").writeTo(w)
     w.flush()
     w.close()
+    val g = new hm.Google
   }
 }
