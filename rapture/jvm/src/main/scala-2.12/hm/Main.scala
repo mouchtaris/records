@@ -20,10 +20,10 @@ object Main {
     w.flush()
     w.close()
     val g = new hm.Google
-    // implicit val actorSystem = ActorSystem("LeBobs")
-    // implicit val materializer = ActorMaterializer()
-    // import scala.concurrent.ExecutionContext.Implicits.global
-    // val s = new hm.HttpServer
-    // s.binding.foreach(println)
+    implicit val actorSystem = ActorSystem("LeBobs")
+    implicit val materializer = ActorMaterializer()
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val s = new hm.HttpServer(g)
+    s.binding.foreach(println)
   }
 }

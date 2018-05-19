@@ -1,6 +1,6 @@
 package hm
 
-import java.io.{InputStreamReader, Reader}
+import java.io.{File, InputStreamReader, Reader}
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow
 
@@ -10,6 +10,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.client.util.store.{FileDataStoreFactory, MemoryDataStoreFactory}
 
 object Google {
   object Scopes {
@@ -35,7 +36,7 @@ class Google {
       applicationSecrets,
       Seq(Google.Scopes.EMAIL).asJavaCollection
     )
+    .setDataStoreFactory(new FileDataStoreFactory(new File("""d:\_discard\tmp\tokens""")))
     .setAccessType("offline")
     .build()
-
 }
