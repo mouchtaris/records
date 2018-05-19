@@ -3,6 +3,11 @@ package hm
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import org.jruby.embed.ScriptingContainer
+import org.jruby.javasupport.JavaEmbedUtils
+
 object Main {
   import List.{ ::, Nil }
   import Textable._
@@ -15,5 +20,10 @@ object Main {
     w.flush()
     w.close()
     val g = new hm.Google
+    // implicit val actorSystem = ActorSystem("LeBobs")
+    // implicit val materializer = ActorMaterializer()
+    // import scala.concurrent.ExecutionContext.Implicits.global
+    // val s = new hm.HttpServer
+    // s.binding.foreach(println)
   }
 }
