@@ -4,18 +4,20 @@ import sbtcrossproject.{
 }
 
 lazy val rapture = crossProject(JVMPlatform, JSPlatform)
-    .crossType(CrossType.Full)
-    .settings {
-      ProjectSettings.settings ++
-      ScalacSettings.settings ++
-      Seq.empty
-    }
+  .crossType(CrossType.Full)
+  .settings {
+    ProjectSettings.settings ++
+    ScalacSettings.settings ++
+    ScalaPBSettings.settings ++
+    Seq.empty
+  }
   .jvmSettings(
     GoogleSettings.settings ++
     AkkaActorSettings.settings ++
     AkkaHttpSettings.settings ++
     AkkaStreamSettings.settings ++
     JRubySettings.settings ++
+    SlickSettings.settings ++
     Seq.empty
   )
 lazy val raptureJVM = rapture.jvm
