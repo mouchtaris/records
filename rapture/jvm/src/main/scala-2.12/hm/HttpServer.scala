@@ -11,6 +11,8 @@ import scala.concurrent.Future
 import scala.util.control.Exception.nonFatalCatch
 
 class HttpServer(
+  config: hm.config.Server
+)(
   google: Google
 )(
   implicit
@@ -85,8 +87,8 @@ class HttpServer(
       }
   val binding: Future[Http.ServerBinding] = http.bindAndHandle(
     handler = route,
-    interface = "0.0.0.0",
-    port = 9000,
+    interface = config.host,
+    port = config.port
   )
 
 }

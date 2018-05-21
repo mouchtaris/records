@@ -19,11 +19,12 @@ object Main {
     model.Email("ol").writeTo(w)
     w.flush()
     w.close()
+    val config = hm.config()
     val g = new hm.Google
     implicit val actorSystem = ActorSystem("LeBobs")
     implicit val materializer = ActorMaterializer()
     import scala.concurrent.ExecutionContext.Implicits.global
-    val s = new hm.HttpServer(g)
+    val s = new hm.HttpServer(config.server)(g)
     s.binding.foreach(println)
   }
 }
