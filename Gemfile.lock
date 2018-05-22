@@ -1,0 +1,55 @@
+GIT
+  remote: https://github.com/bbatsov/rubocop
+  revision: dc60c4123c84e97431ad3275a4362f5cfa4e6d58
+  specs:
+    rubocop (0.56.0)
+      parallel (~> 1.10)
+      parser (>= 2.5)
+      powerpack (~> 0.1)
+      rainbow (>= 2.2.2, < 4.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (~> 1.0, >= 1.0.1)
+
+GIT
+  remote: https://github.com/haml/haml
+  revision: c32fa3c3356d3f4c1df73518910f46ea5f5d9fda
+  specs:
+    haml (5.0.4)
+      temple (>= 0.8.0)
+      tilt
+
+GIT
+  remote: https://github.com/pry/pry
+  revision: 782a09e057d1e714074d61891a5fba293eb9faca
+  specs:
+    pry (0.11.3)
+      coderay (~> 1.1.0)
+      method_source (~> 0.9.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ast (2.4.0)
+    coderay (1.1.2)
+    method_source (0.9.0)
+    parallel (1.12.1)
+    parser (2.5.1.0)
+      ast (~> 2.4.0)
+    powerpack (0.1.1)
+    rainbow (3.0.0)
+    ruby-progressbar (1.9.0)
+    temple (0.8.0)
+    tilt (2.0.8)
+    unicode-display_width (1.3.2)
+
+PLATFORMS
+  java
+  ruby
+
+DEPENDENCIES
+  haml!
+  pry!
+  rubocop!
+
+BUNDLED WITH
+   1.16.2
