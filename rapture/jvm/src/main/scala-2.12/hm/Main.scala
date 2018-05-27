@@ -82,6 +82,7 @@ object Main {
       "--remote"
     )
     val gem_install_bundler = gem_install + "bundler"
+    val gem_install_pry = gem_install + "pry"
 
     val irb = new Command("-S", "irb")
 
@@ -107,9 +108,10 @@ object Main {
           |
           | ${stmts mkString "\n"}
           |
-          | # gem '$gem', ANY_VERSION
-          | # load Gem.bin_path('$gem', '$comm', ANY_VERSION)
-          | require 'pp'; pp ARGV
+          | require 'pp'
+          | pp ARGV
+          | gem '$gem', ANY_VERSION
+          | load Gem.bin_path('$gem', '$comm', ANY_VERSION)
         """.stripMargin ::
         args.toList
       new Command(_args: _*)
@@ -117,7 +119,7 @@ object Main {
     def gem_exec(gem: String, comm: String, args: String*): Command =
       gem_launcher(Seq.empty, gem, comm, args)
 
-    val bundle = gem_exec("bunder", "bundle")
+    val bundle = gem_exec("bundler", "bundle")
     val bundle_help = bundle + "help"
     val bundle_help_install = bundle_help + "install"
     val bundle_help_package = bundle_help + "package"
@@ -170,6 +172,7 @@ object Main {
 //    val gem_install_bundler = Array("-S", "gem", "install", "--install-dir", "./lolgems", "bundler")
 //    val bundle_help_install = Array("-S", "./lolgems/bin/bundle", "help", "install")
 //    jruby(bundle_help_install)
-    jruby.bundle_install()
+    // jruby.gem_install_pry()
+    jruby.pry()
   }
 }
