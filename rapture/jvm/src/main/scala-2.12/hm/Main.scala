@@ -62,7 +62,7 @@ object Main {
               ]
         ]
 
-    val INIT = false
+    val INIT = true 
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
     val RC_DIR: SomePath = if (INIT) new PathForInit(RC_DIR_SOURCE) else new PathForRun(RC_DIR_SOURCE)
     val GEM_HOME = RC_DIR.resolve("_rubyjams")
