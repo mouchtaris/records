@@ -62,7 +62,7 @@ object Main {
               ]
         ]
 
-    val INIT = true 
+    val INIT = true
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
     val RC_DIR: SomePath = if (INIT) new PathForInit(RC_DIR_SOURCE) else new PathForRun(RC_DIR_SOURCE)
     val GEM_HOME = RC_DIR.resolve("_rubyjams")
@@ -85,7 +85,12 @@ object Main {
 
     val irb = new Command("-S", "irb")
 
-    def bundle_exec(gem: String, comm: String, args: String*): Command = {
+    def gem_launcher(
+      stmts: Seq[String],
+      gem: String,
+      comm: String,
+      args: Seq[String]
+    ): Command = {
       val _args =
         "-rrubygems" ::
         "-e" ::
@@ -99,17 +104,20 @@ object Main {
           |
           | Gem.paths = { 'GEM_HOME' => GEM_HOME }
           | ENV['BUNDLE_PATH'] = BUNDLE_PATH
-          | gem 'bundler', BUNDLER_VERSION
-          | require 'bundler/setup'
           |
-          | gem '$gem', ANY_VERSION
-          | load Gem.bin_path('$gem', '$comm', ANY_VERSION)
+          | ${stmts mkString "\n"}
+          |
+          | # gem '$gem', ANY_VERSION
+          | # load Gem.bin_path('$gem', '$comm', ANY_VERSION)
+          | require 'pp'; pp ARGV
         """.stripMargin ::
         args.toList
       new Command(_args: _*)
     }
+    def gem_exec(gem: String, comm: String, args: String*): Command =
+      gem_launcher(Seq.empty, gem, comm, args)
 
-    val bundle = bundle_exec("bunder", "bundle")
+    val bundle = gem_exec("bunder", "bundle")
     val bundle_help = bundle + "help"
     val bundle_help_install = bundle_help + "install"
     val bundle_help_package = bundle_help + "package"
@@ -120,6 +128,16 @@ object Main {
     )
     val bundle_install_local = bundle_install + "--local"
     val bundle_package = bundle + Seq("package", "--all")
+    def bundle_exec(gem: String, comm: String, args: String*): Command =
+      gem_launcher(
+        Seq(
+          "gem 'bundler', BUNDLER_VERSION",
+          "require 'bundler/setup'"
+        ),
+        gem,
+        comm,
+        args
+      )
 
     //val pry = bundle_exec + Seq("-rbundler/setup", "-rpry", "-epry")
     val pry = bundle_exec("pry", "pry")
@@ -152,6 +170,6 @@ object Main {
 //    val gem_install_bundler = Array("-S", "gem", "install", "--install-dir", "./lolgems", "bundler")
 //    val bundle_help_install = Array("-S", "./lolgems/bin/bundle", "help", "install")
 //    jruby(bundle_help_install)
-    jruby.pry()
+    jruby.bundle_install()
   }
 }
