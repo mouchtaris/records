@@ -15,6 +15,8 @@ object Main {
 
   object jruby {
 
+    val INIT = !true
+
     final class Command(val args: String*) extends AnyVal {
       def +(moreArgs: Seq[String])= new Command(args ++ moreArgs: _*)
       def +(moreArg: String) = new Command(args :+ moreArg: _*)
@@ -35,6 +37,9 @@ object Main {
 
       final def resolve(other: String): S =
         newFrom(self.resolve(other))
+
+      final def /(other: String): S =
+        resolve(other)
 
       override def toString: String = {
         throw new Exception("Do not use")
@@ -62,11 +67,11 @@ object Main {
               ]
         ]
 
-    val INIT = true
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
-    val RC_DIR: SomePath = if (INIT) new PathForInit(RC_DIR_SOURCE) else new PathForRun(RC_DIR_SOURCE)
-    val GEM_HOME = RC_DIR.resolve("_rubyjams")
-    val BUNDLE_PATH = RC_DIR.resolve("_bundlerjams")
+    val RC_DIR: SomePath = if (INIT) new PathForInit(RC_DIR_SOURCE) else new PathForRun(Paths.get("."))
+    val GEM_HOME = RC_DIR / "_rubyjams"
+    val BUNDLE_PATH = RC_DIR / "_bundlerjams"
+    val BUNDLE_APP_CONFIG = RC_DIR / "_bundle"
     val BUNDLER_VERSION = "1.16.2"
 
     val gem = new Command("-S", "gem")
@@ -84,7 +89,21 @@ object Main {
     val gem_install_bundler = gem_install + "bundler"
     val gem_install_pry = gem_install + "pry"
 
-    val irb = new Command("-S", "irb")
+    val gem_env: String =
+      s"""
+         |# frozen_string_literal: true
+         |
+         |BUNDLER_VERSION           = '$BUNDLER_VERSION'
+         |GEM_HOME                  = '$GEM_HOME'
+         |BUNDLE_APP_CONFIG         = '$BUNDLE_APP_CONFIG'
+         |
+         |ANY_VERSION               = '>= 0.a'
+         |GEM_PATHS                 = { 'GEM_HOME' => GEM_HOME }.freeze
+         |
+         |ENV['BUNDLE_APP_CONFIG']  = BUNDLE_APP_CONFIG
+       """.stripMargin
+
+    val irb = new Command("-e", s"$gem_env\nrequire 'irb'\nIRB.start")
 
     def gem_launcher(
       stmts: Seq[String],
@@ -93,26 +112,22 @@ object Main {
       args: Seq[String]
     ): Command = {
       val _args =
-        "-rrubygems" ::
         "-e" ::
         s"""
-          | # frozen_string_literal: true
-          |
-          | BUNDLER_VERSION = '$BUNDLER_VERSION'
-          | GEM_HOME = '$GEM_HOME'
-          | BUNDLE_PATH = '$BUNDLE_PATH'
-          | ANY_VERSION = '>= 0.a'
-          |
-          | Gem.paths = { 'GEM_HOME' => GEM_HOME }
-          | ENV['BUNDLE_PATH'] = BUNDLE_PATH
+          | $gem_env
+          | require 'rubygems'
+          | Gem.paths = GEM_PATHS
           |
           | ${stmts mkString "\n"}
           |
           | require 'pp'
+          | pp RUBY_VERSION
           | pp ARGV
+          | pp Dir["#{GEM_HOME}/**"]
+          |
           | gem '$gem', ANY_VERSION
           | load Gem.bin_path('$gem', '$comm', ANY_VERSION)
-        """.stripMargin ::
+        """.stripMargin.stripMargin(' ') ::
         args.toList
       new Command(_args: _*)
     }
@@ -123,11 +138,7 @@ object Main {
     val bundle_help = bundle + "help"
     val bundle_help_install = bundle_help + "install"
     val bundle_help_package = bundle_help + "package"
-    val bundle_install = bundle + Seq(
-      "install",
-      "--clean",
-      "--path", BUNDLE_PATH.toString
-    )
+    val bundle_install = bundle + "install"
     val bundle_install_local = bundle_install + "--local"
     val bundle_package = bundle + Seq("package", "--all")
     def bundle_exec(gem: String, comm: String, args: String*): Command =
