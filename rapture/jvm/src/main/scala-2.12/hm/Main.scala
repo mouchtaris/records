@@ -14,67 +14,19 @@ object Main {
   import Textable._
 
   object jruby {
+    import hm.jrubies._
 
     val INIT = !true
 
-    final class Command(val args: String*) extends AnyVal {
-      def +(moreArgs: Seq[String])= new Command(args ++ moreArgs: _*)
-      def +(moreArg: String) = new Command(args :+ moreArg: _*)
-      def apply(): Unit = {
-        println(s"Running: ${args.mkString(" ")}")
-        org.jruby.Main.main(args.toArray)
-      }
-    }
-
-    trait Path[S <: Path[_]] extends Any {
-      def self: java.nio.file.Path
-      protected[this] def newFrom(path: java.nio.file.Path): S
-
-      final def toUnixPath: String = {
-        import scala.collection.JavaConverters._
-        self.iterator().asScala.mkString("/")
-      }
-
-      final def resolve(other: String): S =
-        newFrom(self.resolve(other))
-
-      final def /(other: String): S =
-        resolve(other)
-
-      override def toString: String = {
-        throw new Exception("Do not use")
-      }
-    }
-
-    final implicit class PathForInit(val self: java.nio.file.Path) extends AnyVal with Path[PathForInit] {
-      def newFrom(path: java.nio.file.Path): PathForInit = path
-      override def toString: String = toUnixPath
-    }
-
-    final implicit class PathForRun(val self: java.nio.file.Path) extends AnyVal with Path[PathForRun] {
-      def newFrom(path: java.nio.file.Path): PathForRun = path
-      override def toString: String = s"uri:classloader:/$toUnixPath"
-    }
-
-    final type SomePath =
-      AnyVal
-        with Path[
-          _
-            >: PathForInit with PathForRun
-            <: AnyVal with Path[
-              _
-                >: PathForInit with PathForRun
-              ]
-        ]
-
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
-    val RC_DIR: SomePath = if (INIT) new PathForInit(RC_DIR_SOURCE) else new PathForRun(Paths.get("."))
+    val rcMan = RcPathManager(INIT, RC_DIR_SOURCE)
+    val RC_DIR = rcMan(".")
     val GEM_HOME = RC_DIR / "_rubyjams"
     val BUNDLE_PATH = RC_DIR / "_bundlerjams"
     val BUNDLE_APP_CONFIG = RC_DIR / "_bundle"
     val BUNDLER_VERSION = "1.16.2"
 
-    val gem = new Command("-S", "gem")
+    val gem = Command("-S", "gem")
     val gem_help = gem + "help"
     val gem_help_install = gem_help + "install"
     val gem_install = gem + Seq(
@@ -103,7 +55,7 @@ object Main {
          |ENV['BUNDLE_APP_CONFIG']  = BUNDLE_APP_CONFIG
        """.stripMargin
 
-    val irb = new Command("-e", s"$gem_env\nrequire 'irb'\nIRB.start")
+    val irb = Command("-e", s"$gem_env\nrequire 'irb'\nIRB.start")
 
     def gem_launcher(
       stmts: Seq[String],
@@ -129,7 +81,7 @@ object Main {
           | load Gem.bin_path('$gem', '$comm', ANY_VERSION)
         """.stripMargin.stripMargin(' ') ::
         args.toList
-      new Command(_args: _*)
+      Command(_args: _*)
     }
     def gem_exec(gem: String, comm: String, args: String*): Command =
       gem_launcher(Seq.empty, gem, comm, args)
