@@ -1,0 +1,106 @@
+d701f39c6cd1d4867a648eb045b11a5299da2bcb		branch '1.3-stable' of https://github.com/grosser/parallel
+cef3a37205052c5197c7b3d2b8ee78cd29ba003a		branch 'cpu-count' of https://github.com/grosser/parallel
+418bf7542c749970e67cdcce131090cc5c710360		branch 'enumerable' of https://github.com/grosser/parallel
+9a312033f0a40d01dd8bed2646e66c289094f76e		branch 'grosser/appjson' of https://github.com/grosser/parallel
+b6fc4ae830b4920bbbedded92f7e9392d10e21a1		branch 'grosser/grosserappjson' of https://github.com/grosser/parallel
+d74ddc76db3563f6d1f0c9165272931ecd063225		branch 'grosser/reconnect' of https://github.com/grosser/parallel
+9a312033f0a40d01dd8bed2646e66c289094f76e		branch 'grosserappjson' of https://github.com/grosser/parallel
+fe6f49c5599bd9fa3ea3a8a5d883602f6128934d		branch 'master' of https://github.com/grosser/parallel
+5aa43d95f176393ba59865f2773c9c5f36f7c361		branch 'physical' of https://github.com/grosser/parallel
+79bb51638b970af1a972c962f458053d9ed7b5eb		branch 'workers' of https://github.com/grosser/parallel
+c75fff3615009f9f36d274709e497a788fbdc663	not-for-merge	tag 'v0.1.0' of https://github.com/grosser/parallel
+93143e208b6c5052cdf4dd7d9766ae7d2e186d46	not-for-merge	tag 'v0.1.1' of https://github.com/grosser/parallel
+0b273e9c06f197ca6a1352317bb0142133cb9326	not-for-merge	tag 'v0.1.10' of https://github.com/grosser/parallel
+626d3d6d7cc9e5e4d94620cefedc9e78901e15f1	not-for-merge	tag 'v0.1.2' of https://github.com/grosser/parallel
+5810e40d9c034427db68de97eec753704ebb6b2f	not-for-merge	tag 'v0.1.3' of https://github.com/grosser/parallel
+5d7fd87236153ead516ddb7b1189ba8e5e6f1132	not-for-merge	tag 'v0.1.4' of https://github.com/grosser/parallel
+3e3b5ab8e1cf589b50423829131e81bfc66fecae	not-for-merge	tag 'v0.1.5' of https://github.com/grosser/parallel
+e25eab0c1c21032299aa30f6dcb51bcd4239f306	not-for-merge	tag 'v0.1.6' of https://github.com/grosser/parallel
+b49613be1acf44ddca3fc098f04d3f71d4ade4c6	not-for-merge	tag 'v0.1.7' of https://github.com/grosser/parallel
+f322de58b9dfeed3a20f87e84d6e3e0bdbe6cf8e	not-for-merge	tag 'v0.1.8' of https://github.com/grosser/parallel
+2804f45d06cce19e9480d2fcda86909cbcb5fea2	not-for-merge	tag 'v0.1.9' of https://github.com/grosser/parallel
+2f077c7b553569eb337729dc96a0491d05df4dd7	not-for-merge	tag 'v0.2.0' of https://github.com/grosser/parallel
+c96cd81a9382a531d4b93453be1fbac800b1d750	not-for-merge	tag 'v0.3.0' of https://github.com/grosser/parallel
+b070825ae69854a681e4530a3e0d53225d6f0efe	not-for-merge	tag 'v0.3.1' of https://github.com/grosser/parallel
+701366a747b4bbdacbb48eae9fdad86bd2da4daa	not-for-merge	tag 'v0.3.2' of https://github.com/grosser/parallel
+ee28e22f205d3d35e58f65748d520c66ea57db9f	not-for-merge	tag 'v0.3.3' of https://github.com/grosser/parallel
+62fbec0ee1ce05cb22324f4a1419458b5fd9525f	not-for-merge	tag 'v0.3.4' of https://github.com/grosser/parallel
+3d14846a71fe190ba73bb47700f403dff7a3ef27	not-for-merge	tag 'v0.3.5' of https://github.com/grosser/parallel
+2bcc539bec766a0011ad2a48fb58509efc21d6f6	not-for-merge	tag 'v0.3.6' of https://github.com/grosser/parallel
+6aa5cfbf8269bbf9e328fc8895bc8a0594e90240	not-for-merge	tag 'v0.3.7' of https://github.com/grosser/parallel
+9ab0408cae1028b6f6823b081f6ce2c957d4a0eb	not-for-merge	tag 'v0.4.0' of https://github.com/grosser/parallel
+522ccbf42ca97770b2021db66ea16561a21f1389	not-for-merge	tag 'v0.4.1' of https://github.com/grosser/parallel
+3636eca2ebf199f03ea93dfc6e23aa6684265702	not-for-merge	tag 'v0.4.2' of https://github.com/grosser/parallel
+97399c35bfebb682d588d67eb6415eae0c849440	not-for-merge	tag 'v0.4.3' of https://github.com/grosser/parallel
+eda39a010b7e57eb9a36453fece704d8915852ea	not-for-merge	tag 'v0.4.4' of https://github.com/grosser/parallel
+34597b8b8540a7e9ad16114f6da25137d28d98ca	not-for-merge	tag 'v0.4.5' of https://github.com/grosser/parallel
+966893d207cc91cdd654821f70b42817970702bb	not-for-merge	tag 'v0.4.6' of https://github.com/grosser/parallel
+e11028b61afcdcdbc9b700cff5860d8932a78c80	not-for-merge	tag 'v0.5.0' of https://github.com/grosser/parallel
+93fe84f38a2f45daa016b43b7939b0e8e8759fba	not-for-merge	tag 'v0.5.1' of https://github.com/grosser/parallel
+32bae5b361f00c895774df57f65ac335f23407b1	not-for-merge	tag 'v0.5.10' of https://github.com/grosser/parallel
+08e53ef9295bca7509d7bc802bca167ea12d4835	not-for-merge	tag 'v0.5.11' of https://github.com/grosser/parallel
+9fce629cfc1a708c5ca49d6c01113391474e9c68	not-for-merge	tag 'v0.5.12' of https://github.com/grosser/parallel
+a3e81c96d07665676a133633d7f9af115e500e2a	not-for-merge	tag 'v0.5.13' of https://github.com/grosser/parallel
+731fda7048b6e32990ff2c4bd8722490e2ae86a0	not-for-merge	tag 'v0.5.14' of https://github.com/grosser/parallel
+a9365d2a3e54bc6bf31d77e65aa62113c2d105cd	not-for-merge	tag 'v0.5.15' of https://github.com/grosser/parallel
+7d0ff7e44a263f9e06b0468211f55eba13902b04	not-for-merge	tag 'v0.5.16' of https://github.com/grosser/parallel
+309e02c0a551b70c88a25d11cd936adf9a5c4bc4	not-for-merge	tag 'v0.5.17' of https://github.com/grosser/parallel
+b06fd208af1b630d71df54805ba7cdead0a5f3d1	not-for-merge	tag 'v0.5.18' of https://github.com/grosser/parallel
+f41e461b0230cc6497f9d7870073b1f8552d24bf	not-for-merge	tag 'v0.5.19' of https://github.com/grosser/parallel
+602ad5ea97b4267d016bbab0484ead7e03955d5b	not-for-merge	tag 'v0.5.2' of https://github.com/grosser/parallel
+e6d63d5b9c14e2492666bcba82cf6117bab43f72	not-for-merge	tag 'v0.5.20' of https://github.com/grosser/parallel
+11850f3cca75f26c45917645d4e5287c8ce73e68	not-for-merge	tag 'v0.5.21' of https://github.com/grosser/parallel
+cbc661228565bf6c1d5edb7685a69decb6db2799	not-for-merge	tag 'v0.5.3' of https://github.com/grosser/parallel
+1cc9baca435661b4055d8df88642e5946dcf202a	not-for-merge	tag 'v0.5.4' of https://github.com/grosser/parallel
+d4eda51f0b6f31a4686820e48b8a2242f2b2901b	not-for-merge	tag 'v0.5.5' of https://github.com/grosser/parallel
+de1caadee1e2bfb914a6f8ed28a0e1c35ec9319c	not-for-merge	tag 'v0.5.6' of https://github.com/grosser/parallel
+0123d846fbb55ccd678a24b025490cd48ea0d40a	not-for-merge	tag 'v0.5.7' of https://github.com/grosser/parallel
+35be85fa9a5851f82b44d27c350d2ab47f5c0fd9	not-for-merge	tag 'v0.5.8' of https://github.com/grosser/parallel
+6fffa0020c97b5fac01f902fe6497345468f58ae	not-for-merge	tag 'v0.5.9' of https://github.com/grosser/parallel
+8561a6bc4aafda68bc2c53466ae1dbb1beaa16f7	not-for-merge	tag 'v0.6.0' of https://github.com/grosser/parallel
+e23f32c936b03bd6217a7a12cc4f5c9e2c10d551	not-for-merge	tag 'v0.6.1' of https://github.com/grosser/parallel
+a551f7786a26b0e0d78e60296513ba10026882b9	not-for-merge	tag 'v0.6.2' of https://github.com/grosser/parallel
+a6670bb8dcfa56e74f5b34e2a8822a34a271bfef	not-for-merge	tag 'v0.6.3' of https://github.com/grosser/parallel
+dcfb7ce99a0be51468a58342bee19afe881f4c70	not-for-merge	tag 'v0.6.4' of https://github.com/grosser/parallel
+44ca2628412bfe8b319c8e65ab5442ed16a96674	not-for-merge	tag 'v0.6.5' of https://github.com/grosser/parallel
+c8e95f0c762d75c0dfa8cb88d7c01258edffb4fe	not-for-merge	tag 'v0.7.0' of https://github.com/grosser/parallel
+b51e87a8b6c5111ef2c0636b3cc8fa7c8de9ce00	not-for-merge	tag 'v0.7.1' of https://github.com/grosser/parallel
+eb9677b231a9b86bcaaaa63daee649322c80f3b6	not-for-merge	tag 'v0.8.0' of https://github.com/grosser/parallel
+79a2d5503ef1bd012bc611254c62d30d2afa6551	not-for-merge	tag 'v0.8.1' of https://github.com/grosser/parallel
+f55abcfc025c78bd3fe2bf339478fc9f8e6389f6	not-for-merge	tag 'v0.8.2' of https://github.com/grosser/parallel
+98e81260ce6ac3561adc01340ff71457d67fe22b	not-for-merge	tag 'v0.8.3' of https://github.com/grosser/parallel
+9bb4dffb45755984ec8fd04fe8c0b6953df0d1e1	not-for-merge	tag 'v0.8.4' of https://github.com/grosser/parallel
+84c868ea2b100543f9159996d79dd45c4494bcae	not-for-merge	tag 'v0.9.0' of https://github.com/grosser/parallel
+aaa97532d7832436737f3e1ac4ed0fe2b14a0e7c	not-for-merge	tag 'v0.9.1' of https://github.com/grosser/parallel
+acb0eb7370426e58a6ad846cc188d93e7c8470ea	not-for-merge	tag 'v0.9.2' of https://github.com/grosser/parallel
+5eb5b34e506f5c75b35bf883e60e2b2dbaf8bbb9	not-for-merge	tag 'v1.0.0' of https://github.com/grosser/parallel
+c59f5c29df4a3c606f83b2790c26149d58af3a8e	not-for-merge	tag 'v1.1.0' of https://github.com/grosser/parallel
+44e6b7cc610800f757540d4cf193c838e654a563	not-for-merge	tag 'v1.1.1' of https://github.com/grosser/parallel
+c7b8c3a04fc36a0fecd6e0ac02d4901b643f9978	not-for-merge	tag 'v1.1.2' of https://github.com/grosser/parallel
+ad48fab2cd8015b9778d3bad73140839d47cb558	not-for-merge	tag 'v1.10.0' of https://github.com/grosser/parallel
+799205d9ec1035846e1bd462fc6a912ab2548260	not-for-merge	tag 'v1.11.0' of https://github.com/grosser/parallel
+1c4146d265cb4e25acb42bb43285fa4e43a68cd2	not-for-merge	tag 'v1.11.1' of https://github.com/grosser/parallel
+9125edea57bbddc77a8573edad5464bc4f338d2a	not-for-merge	tag 'v1.11.2' of https://github.com/grosser/parallel
+5fa4406bcf0b3109f645550ca799fc7570501870	not-for-merge	tag 'v1.12.0' of https://github.com/grosser/parallel
+5a41088fe25a45d0f06968ca6907ec0464cd2cfb	not-for-merge	tag 'v1.12.1' of https://github.com/grosser/parallel
+364f1ee86a1ce25ae8ef02eeffc5c40ed11155ba	not-for-merge	tag 'v1.2.0' of https://github.com/grosser/parallel
+bfaa7bc1c07d3a803cd3ffff398803dd2a6a2a4a	not-for-merge	tag 'v1.2.1' of https://github.com/grosser/parallel
+fa6f8166d0ae3445a4302d376434793f48d52230	not-for-merge	tag 'v1.2.2' of https://github.com/grosser/parallel
+68451e2b281f78c813930cf3f4fe87b91086c36a	not-for-merge	tag 'v1.2.3' of https://github.com/grosser/parallel
+02bf36cd1dd4fe5e50b780caf2f74d4b7a59d688	not-for-merge	tag 'v1.2.4' of https://github.com/grosser/parallel
+76b14e7d1c4a79559c99d872fd6c746f417fe8e7	not-for-merge	tag 'v1.3.0' of https://github.com/grosser/parallel
+a70e9cfc680f2edeb23a450c184f06a82e8a2016	not-for-merge	tag 'v1.3.1' of https://github.com/grosser/parallel
+90a9307f30cbe90ca1985eeca2cfd32f01ca513c	not-for-merge	tag 'v1.3.2' of https://github.com/grosser/parallel
+6e5e01cc7c4f8d89285bd6e81591c6b14c6ba655	not-for-merge	tag 'v1.3.3' of https://github.com/grosser/parallel
+dbcbf131162071600d2011804a5e2b8f74a8cf5e	not-for-merge	tag 'v1.3.3.1' of https://github.com/grosser/parallel
+0e5148c104409f6970bd9df03be2bf5d3cdf768d	not-for-merge	tag 'v1.3.4' of https://github.com/grosser/parallel
+44b0b12705a6ab92e73b4c0ae8093a64786a0fbd	not-for-merge	tag 'v1.4.0' of https://github.com/grosser/parallel
+d0bc8be4fb4e3f32ca00dea2899aeef6efac9964	not-for-merge	tag 'v1.4.1' of https://github.com/grosser/parallel
+3248d63f124d3b19608b50fa4d481122a9aad584	not-for-merge	tag 'v1.5.0' of https://github.com/grosser/parallel
+8dcf7bfc7d612f39bf0db8e5f5165b5a02024b23	not-for-merge	tag 'v1.5.1' of https://github.com/grosser/parallel
+134dc08bb618567af68f5c14f5368f53c116b0bb	not-for-merge	tag 'v1.6.0' of https://github.com/grosser/parallel
+f3af0c9b42389b33622502bf41948d71bbefc762	not-for-merge	tag 'v1.6.1' of https://github.com/grosser/parallel
+e7d08127e724717b98d9e42d086c204274802aeb	not-for-merge	tag 'v1.6.2' of https://github.com/grosser/parallel
+4c7aab865cdfb058f480da982619da165539eedd	not-for-merge	tag 'v1.7.0' of https://github.com/grosser/parallel
+3c2d9109405cff8ca6ba0c3bcfd2fd69403a3d73	not-for-merge	tag 'v1.8.0' of https://github.com/grosser/parallel
+f7740ed2cc31aee3a412f62bd46ac536765254b8	not-for-merge	tag 'v1.9.0' of https://github.com/grosser/parallel
