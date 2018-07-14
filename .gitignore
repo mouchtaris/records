@@ -1,0 +1,8 @@
+/.idea/
+/.sass-cache/
+/project/project/
+/project/target/
+/target/
+/rapture/js/target/
+/rapture/jvm/target/
+/rapture/jvm/src/main/resources/_bundlerjams/

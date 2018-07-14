@@ -7,26 +7,40 @@ import com.typesafe.config.{
 
 object config {
 
-  final val Rapture = "rapture"
+  trait ConfigObject[T] {
+    def name: String
+    def construct: tsConfig ⇒ T
 
-  final object Server {
+    final def apply(config: tsConfig): T = construct(config)
+  }
+
+  final implicit class TsConfigDecoration(val value: tsConfig) extends AnyVal {
+    def getConfig[T](obj: ConfigObject[T]): T = obj(value getConfig obj.name)
+  }
+
+  final object Server extends AnyRef
+    with ConfigObject[Server]
+  {
     val name = "server"
     val host = "host"
     val port = "port"
+    val construct = new Server(_)
   }
-  final class Server(val self: tsConfig) extends AnyVal {
-    def host: String = self.getString(Server.host)
-    def port: Int = self.getInt(Server.port)
+  final class Server(val value: tsConfig) extends AnyVal {
+    def host: String = value getString Server.host
+    def port: Int = value getInt Server.port
   }
 
-  final class Config(val self: tsConfig) extends AnyVal {
-    def server: Server = new Server(self.getConfig(Server.name))
-  }
-  final object Config {
+  final object Config extends AnyRef
+    with ConfigObject[Config]
+  {
     val name = "rapture"
+    val construct = new Config(_)
+  }
+  final class Config(val value: tsConfig) extends AnyVal {
+    def server = value getConfig Server
   }
 
-  def apply(): Config =
-    new Config(ConfigFactory.defaultApplication.getConfig(Rapture))
-
+  def root = ConfigFactory.defaultApplication
+  def apply() = root getConfig Config
 }
