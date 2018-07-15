@@ -3,14 +3,14 @@ package hm
 import java.io.{File, InputStreamReader, Reader}
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow
-
-import scala.collection.JavaConverters._
 import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.client.util.store.{FileDataStoreFactory, MemoryDataStoreFactory}
+import com.google.api.client.util.store.FileDataStoreFactory
+
+import scala.collection.JavaConverters._
 
 object Google {
   object Scopes {
