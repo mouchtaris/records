@@ -1,30 +1,28 @@
-package lart.http.routes
+package lart
+package http.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, Route, _}
-import hm.SomeoneFor.A
-import org.slf4j.Logger
-import Directives._
+import akka.http.scaladsl.server.Directives.{ pathPrefix ⇒ pathPrefixDirective, complete }
+import akka.http.scaladsl.server.Route
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
-final class CompleteFuture(
-  pathPrefix: String
-)(
-  implicit
-  _logger: A[Logger]#For[CompleteFuture]
-) {
-  import _logger.{value ⇒ logger}
+object CompleteFuture {
 
-  private[this] lazy val promise: Promise[Unit] = Promise()
-
-  lazy val complete: Future[Unit] = promise.future
-
-  lazy val route: Route =
-    Directives.pathPrefix(pathPrefix) {
-      logger.info("Completing future from {}")
-      promise.tryComplete(Success(()))
-      Directives.complete(StatusCodes.OK)
-    }
+  def apply(
+    pathPrefix: String,
+    logger: Logger.Logger,
+  )
+  : (Route, Future[Unit]) = {
+    val promise: Promise[Unit] = Promise()
+    val future: Future[Unit] = promise.future
+    val route: Route =
+      pathPrefixDirective(pathPrefix) {
+        logger.info("Completing future from {}")
+        promise.tryComplete(Success(()))
+        complete(StatusCodes.OK)
+      }
+    (route, future)
+  }
 }

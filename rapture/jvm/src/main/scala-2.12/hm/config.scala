@@ -18,13 +18,23 @@ object config {
     def getConfig[T](obj: ConfigObject[T]): T = obj(value getConfig obj.name)
   }
 
+  final object AkkaActors extends AnyRef
+    with ConfigObject[AkkaActors]
+  {
+    def name = "akka_actors"
+    def construct = new AkkaActors(_)
+    def systemName = "system_name"
+  }
+  final class AkkaActors(val value: tsConfig) extends AnyVal {
+    def systemName: String = value getString AkkaActors.systemName
+  }
   final object Server extends AnyRef
     with ConfigObject[Server]
   {
-    val name = "server"
-    val host = "host"
-    val port = "port"
-    val construct = new Server(_)
+    def name = "server"
+    def host = "host"
+    def port = "port"
+    def construct = new Server(_)
   }
   final class Server(val value: tsConfig) extends AnyVal {
     def host: String = value getString Server.host
@@ -34,11 +44,12 @@ object config {
   final object Config extends AnyRef
     with ConfigObject[Config]
   {
-    val name = "rapture"
-    val construct = new Config(_)
+    def name = "rapture"
+    def construct = new Config(_)
   }
   final class Config(val value: tsConfig) extends AnyVal {
-    def server = value getConfig Server
+    def server: Server = value getConfig Server
+    def akkaActors: AkkaActors = value getConfig AkkaActors
   }
 
   def root = ConfigFactory.defaultApplication
