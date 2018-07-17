@@ -11,7 +11,6 @@ object SlickSettings {
       "com.typesafe.slick" %% "slick" % version,
       "com.typesafe.slick" %% "slick-hikaricp" % version,
       "com.typesafe.slick" %% "slick-codegen" % version,
-      "org.slf4j" % "slf4j-nop" % "1.6.4",
       "org.postgresql" % "postgresql" % "42.1.4"
     )
   )

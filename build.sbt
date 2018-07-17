@@ -18,6 +18,7 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
     AkkaStreamSettings.settings ++
     JRubySettings.settings ++
     SlickSettings.settings ++
+    Slf4jSettings.settings ++
     Seq.empty
   )
 lazy val raptureJVM = rapture.jvm
