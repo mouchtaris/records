@@ -4,7 +4,7 @@ import
 
 object Slf4jSettings {
 
-  val version = "1.0.13"
+  val version = "1.2.3"
 
   val settings = Seq(
     libraryDependencies ++= Seq(

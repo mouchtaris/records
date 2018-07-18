@@ -39,9 +39,8 @@ class HttpServer(
     req ⇒ {
       logger.info("forwarding request {}", req)
       val uri2 = req.uri
-        .withHost("api.patron.gallery")
-        .withScheme("https")
-        .withPort(443)
+        .withHost("159.65.193.153")
+        .withPort(8090)
       logger.info("new uri: {}", uri2)
       val req2 = req.withUri(uri2)
       http.singleRequest(req2)

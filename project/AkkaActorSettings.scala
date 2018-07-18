@@ -11,6 +11,7 @@ object AkkaActorSettings {
   val settings = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % Version,
+      "com.typesafe.akka" %% "akka-slf4j" % Version,
       "com.typesafe.akka" %% "akka-testkit" % Version % Test
     )
   )
