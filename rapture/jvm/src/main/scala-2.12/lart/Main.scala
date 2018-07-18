@@ -36,7 +36,7 @@ object Main {
     // fut.onComplete(println)
     //_server.bind().map { _ ⇒ acsys.terminate() }
 
-    val scene = new setup.Scene
+    val scene = setup.Scene()
 
     scene.httpServer.start()
   }
