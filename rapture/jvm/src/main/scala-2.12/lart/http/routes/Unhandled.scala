@@ -12,10 +12,10 @@ object Unhandled {
 
   def apply(
     handle: HttpRequest ⇒ Future[HttpResponse],
-    logger: Logger.Logger
+    logger: Logging.Logger
   ): Route =
     extractRequest { req ⇒
-      logger.warn("Unhandled request: {}", req)
+      logger.warning("Unhandled request: {}", req)
       complete(handle(req))
     }
 

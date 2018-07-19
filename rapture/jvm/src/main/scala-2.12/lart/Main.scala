@@ -7,7 +7,6 @@ import scala.concurrent.duration._
 
 object Main {
 
-  lazy val logger = getLogger("Main")
   lazy val config = hm.config()
   object db {
     lazy val conf = new ConfDeco(com.typesafe.config.ConfigFactory.defaultApplication)
@@ -37,8 +36,10 @@ object Main {
     //_server.bind().map { _ ⇒ acsys.terminate() }
 
     val scene = setup.Scene()
-
+    val logger = scene.loggingContext.factory(this.toString)
     scene.httpServer.start()
+    // scene.tcpHandler
+    logger.info("Hello lol")
   }
 
 }

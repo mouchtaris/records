@@ -16,7 +16,7 @@ object Main {
   object jruby {
     import hm.jrubies._
 
-    val INIT = !true
+    val INIT = true
 
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
     val rcMan = RcPathManager(INIT, RC_DIR_SOURCE)
@@ -75,7 +75,7 @@ object Main {
           | require 'pp'
           | pp RUBY_VERSION
           | pp ARGV
-          | pp Dir["#{GEM_HOME}/**"]
+          | # pp Dir["#{GEM_HOME}/**"]
           |
           | gem '$gem', ANY_VERSION
           | load Gem.bin_path('$gem', '$comm', ANY_VERSION)
@@ -90,7 +90,7 @@ object Main {
     val bundle_help = bundle + "help"
     val bundle_help_install = bundle_help + "install"
     val bundle_help_package = bundle_help + "package"
-    val bundle_install = bundle + "install"
+    val bundle_install = bundle + "install" + "--path" + BUNDLE_PATH.toString + "--no-cache"
     val bundle_install_local = bundle_install + "--local"
     val bundle_package = bundle + Seq("package", "--all")
     def bundle_exec(gem: String, comm: String, args: String*): Command =
@@ -111,8 +111,8 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-//    println("Geia soy theofile")
-//    println(1 :: 2 :: 3 :: "This is the shit" :: Nil)
+    println("Geia soy theofile")
+    println(1 :: 2 :: 3 :: "This is the shit" :: Nil)
 //    val w = new OutputStreamWriter(System.out, StandardCharsets.UTF_8)
 //    model.Email("ol").writeTo(w)
 //    w.flush()
@@ -136,6 +136,6 @@ object Main {
 //    val bundle_help_install = Array("-S", "./lolgems/bin/bundle", "help", "install")
 //    jruby(bundle_help_install)
     // jruby.gem_install_pry()
-    jruby.pry()
+    jruby.bundle_install()
   }
 }
