@@ -20,11 +20,13 @@ final case class RcPath(
     RcPath(man, self.resolve(other))
   def /(other: String) = resolve(other)
 
-  override def toString: String =
+  def path: String =
     if (man.init)
       toUnixPath
     else
       s"uri:classloader:/$toUnixPath"
+
+  override def toString: String = path
 }
 
 

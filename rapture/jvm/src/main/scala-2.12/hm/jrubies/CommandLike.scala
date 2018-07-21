@@ -1,7 +1,7 @@
 package hm
 package jrubies
 
-trait CommandOps extends Any {
+trait CommandLike extends Any {
   def args: Seq[String]
 
   final def +(moreArgs: Seq[String])= new Command(args ++ moreArgs)

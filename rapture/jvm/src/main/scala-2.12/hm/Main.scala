@@ -17,13 +17,14 @@ object Main {
     import hm.jrubies._
 
     val INIT = true
-
     val RC_DIR_SOURCE = Paths.get("rapture", "jvm", "src", "main", "resources")
+    val fac = Facade(INIT, RC_DIR_SOURCE)
+
     val rcMan = RcPathManager(INIT, RC_DIR_SOURCE)
     val RC_DIR = rcMan(".")
     val GEM_HOME = RC_DIR / "_rubyjams"
     val BUNDLE_PATH = RC_DIR / "_bundlerjams"
-    val BUNDLE_APP_CONFIG = RC_DIR / "_bundle"
+    def BUNDLE_APP_CONFIG(implicit env: Env) = RC_DIR / "_ruby_envs" / env.path / "_bundle"
     val BUNDLER_VERSION = "1.16.2"
 
     val gem = Command("-S", "gem")
@@ -47,17 +48,20 @@ object Main {
          |
          |BUNDLER_VERSION           = '$BUNDLER_VERSION'
          |GEM_HOME                  = '$GEM_HOME'
-         |BUNDLE_APP_CONFIG         = '$BUNDLE_APP_CONFIG'
          |
          |ANY_VERSION               = '>= 0.a'
          |GEM_PATHS                 = { 'GEM_HOME' => GEM_HOME }.freeze
-         |
-         |ENV['BUNDLE_APP_CONFIG']  = BUNDLE_APP_CONFIG
        """.stripMargin
+    def bundle_env(implicit env: Env): Seq[String] =
+      Seq(
+        s"BUNDLE_APP_CONFIG         = '$BUNDLE_APP_CONFIG'",
+        "ENV['BUNDLE_APP_CONFIG']  = BUNDLE_APP_CONFIG",
+      )
 
     val irb = Command("-e", s"$gem_env\nrequire 'irb'\nIRB.start")
 
     def gem_launcher(
+      envs: Seq[String],
       stmts: Seq[String],
       gem: String,
       comm: String,
@@ -67,6 +71,7 @@ object Main {
         "-e" ::
         s"""
           | $gem_env
+          | ${envs mkString "\n"}
           | require 'rubygems'
           | Gem.paths = GEM_PATHS
           |
@@ -84,7 +89,7 @@ object Main {
       Command(_args: _*)
     }
     def gem_exec(gem: String, comm: String, args: String*): Command =
-      gem_launcher(Seq.empty, gem, comm, args)
+      gem_launcher(Seq.empty, Seq.empty, gem, comm, args)
 
     val bundle = gem_exec("bundler", "bundle")
     val bundle_help = bundle + "help"
@@ -93,8 +98,9 @@ object Main {
     val bundle_install = bundle + "install" + "--path" + BUNDLE_PATH.toString + "--no-cache"
     val bundle_install_local = bundle_install + "--local"
     val bundle_package = bundle + Seq("package", "--all")
-    def bundle_exec(gem: String, comm: String, args: String*): Command =
+    def bundle_exec(gem: String, comm: String, args: String*)(implicit env: Env): Command =
       gem_launcher(
+        bundle_env,
         Seq(
           "gem 'bundler', BUNDLER_VERSION",
           "require 'bundler/setup'"
@@ -105,7 +111,9 @@ object Main {
       )
 
     //val pry = bundle_exec + Seq("-rbundler/setup", "-rpry", "-epry")
-    val pry = bundle_exec("pry", "pry")
+    def pry(implicit env: Env) = bundle_exec("pry", "pry")
+    def rails(implicit env: Env) = bundle_exec("railties", "rails")
+    def rails_console(implicit env: Env) = rails + "console"
     // val pry = bundle_exec + "pry"
     // val rubocop = bundle_exec + BUNDLE_PATH.resolve("jruby/2.3.0/bin/rubocop").toString
   }
@@ -136,6 +144,9 @@ object Main {
 //    val bundle_help_install = Array("-S", "./lolgems/bin/bundle", "help", "install")
 //    jruby(bundle_help_install)
     // jruby.gem_install_pry()
-    jruby.bundle_install()
+    import jrubies.Env.musae.api
+    println {
+      jruby.rails_console.args
+    }
   }
 }

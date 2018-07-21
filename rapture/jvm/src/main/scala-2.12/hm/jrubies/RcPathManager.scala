@@ -5,7 +5,10 @@ final case class RcPathManager(
   init: Boolean,
   rcRoot: java.nio.file.Path
 ) {
-  def apply(p: String) = RcPath(this, java.nio.file.Paths.get(p))
+  import java.nio.file.Paths.{ get ⇒ Path }
+
+  def apply(p: String): RcPath  = RcPath(this, Path(p))
+  def /(child: String): RcPath = apply(".") / child
 }
 
 
