@@ -1,0 +1,100 @@
+# frozen_string_literal: true
+source 'https://rubygems.org'
+
+ruby '2.3.3', engine: :jruby, engine_version: '<= 9.1.19'
+
+# rubocop:disable Bundler/OrderedGems
+
+# Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
+gem 'rails', '~> 4'
+gem 'pg', platform: :ruby
+gem 'activerecord-jdbcpostgresql-adapter', platform: :jruby
+gem 'puma'
+
+gem 'figaro'
+
+# Image storage
+gem 'paperclip'
+gem 'aws-sdk'
+gem 'activesupport-json_encoder'
+
+# Authentication
+gem 'devise'
+gem 'doorkeeper'
+gem 'wine_bouncer'
+gem 'bcrypt'
+gem 'hashie-forbidden_attributes'
+gem 'oauth2'
+
+gem 'rails_12factor', group: :production
+
+# api
+gem 'grape'
+gem 'grape-middleware-logger'
+gem 'grape-route-helpers'
+gem 'grape-entity'
+gem 'kramdown'
+gem 'rack-cors'
+
+# documentation
+gem 'grape-swagger'
+gem 'grape-swagger-rails'
+gem 'grape_on_rails_routes' # rake grape:routes
+
+gem 'usecasing'
+
+# instrumentation
+gem 'raygun4ruby'
+gem 'newrelic_rpm'
+
+# admin panel
+gem 'rails_admin', git: 'https://github.com/sferik/rails_admin'
+gem 'execjs'
+gem 'therubyracer', platform: :ruby
+gem 'therubyrhino', platform: :jruby
+gem 'kaminari'
+
+# payments
+gem 'stripe', git: 'https://github.com/stripe/stripe-ruby'
+gem 'stripe_event'
+
+# search
+gem 'algoliasearch-rails'
+gem 'will_paginate'
+
+# cron job
+gem 'whenever', require: false
+
+# google integration
+gem 'google-api-client'
+
+# silencing logs
+gem 'silencer'
+
+group :development do
+  gem 'guard-rubocop', require: false
+  gem 'guard-rspec', require: false
+  gem 'overcommit', require: false
+  gem 'letter_opener'
+end
+
+group :development, :test do
+  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
+  gem 'byebug', platform: :ruby
+  gem 'pry-byebug', platform: :ruby
+  gem 'pry-debugger-jruby', platform: :jruby
+  gem 'database_cleaner'
+  gem 'rspec-rails'
+  gem 'rspec-its'
+  gem 'shoulda-matchers', require: false
+  gem 'factory_girl_rails'
+  # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
+  gem 'spring'
+  gem 'rubocop', require: false
+  gem 'rubocop-rspec', require: false
+  gem 'faker'
+end
+
+group :test do
+  gem 'email_spec'
+end
