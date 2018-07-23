@@ -1,4 +1,3 @@
 package hm
 
-package object jrubies {
-}
+package object jrubies

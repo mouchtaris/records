@@ -18,7 +18,7 @@ final case class RcPath(
 
   def resolve(other: String): RcPath =
     RcPath(man, self.resolve(other))
-  def /(other: String) = resolve(other)
+  def /(other: String): RcPath = resolve(other)
 
   def path: String =
     if (man.init)

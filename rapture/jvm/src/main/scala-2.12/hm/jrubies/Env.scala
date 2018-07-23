@@ -1,17 +1,21 @@
-package hm
-package jrubies
+package hm.jrubies
 
-final class Env(val value: Vector[String]) extends AnyVal {
-  def from(base: Env): Env = new Env(base.value ++ value)
-  def /(other: Env): Env = other from this
-  def /(other: String): Env = new Env(value :+ other)
-  def path: String = value mkString "/"
-}
+final case class Env(
+  constants: Map[Identifier, Expression],
+  statements: Seq[Expression],
+)
+{
+  import RbLine.Lines
 
-object Env {
-  def apply(name: String*): Env = new Env(name.toVector)
-  object musae {
-    val base = Env("musae")
-    implicit val api = base / "rails_api"
-  }
+  def constants_rb: String =
+    constants.toVector
+      .map { case (id, expr) ⇒ s"$id = $expr" }
+      .map(RbLine(_))
+      .toRb
+
+  def statements_rb: String =
+    statements.toVector
+      .map(_.value)
+      .map(RbLine(_))
+      .toRb
 }
