@@ -16,7 +16,8 @@ trait BundlerLike
   final def bundler_gem_env: Env =
     Env(
       constants = Map(
-        Identifier("BUNDLER_VERSION") → Expression.string(BUNDLER_VERSION)
+        Identifier("BUNDLER_VERSION") → Expression.string(BUNDLER_VERSION),
+        Identifier("BUNDLE_GEMFILE") → Expression.string(BUNDLE_GEMFILE.path),
       ),
       statements = Vector.empty
     )
@@ -27,7 +28,11 @@ trait BundlerLike
   final def bundle_help: Command = bundle + "help"
   final def bundle_help_install: Command = bundle_help + "install"
   final def bundle_help_package: Command = bundle_help + "pacakge"
-  final def bundle_install: Command = bundle + "install" + "--path" + BUNDLE_PATH.path + "--no-cache"
+  final def bundle_install: Command =
+    bundle + "install" +
+      "--path" + BUNDLE_PATH.path +
+      "--no-cache" +
+      "--gemfile" + BUNDLE_GEMFILE.path
   final def bundle_install_local: Command = bundle_install + "--local"
   final def bundle_package: Command = bundle + "package" + "--all"
 }

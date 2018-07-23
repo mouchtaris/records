@@ -118,6 +118,9 @@ object Main {
       val env: BundlerEnv = BundlerEnv.musae.api
     }
 
-    bun.bundle_help()
+    if (false)
+      bun.bundle_help_install()
+    else
+      bun.bundle_install()
   }
 }
