@@ -9,6 +9,7 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
     ProjectSettings.settings ++
     ScalacSettings.settings ++
     ScalaPBSettings.settings ++
+    ScalacheckSettings.settings ++
     Seq.empty
   }
   .jvmSettings(
