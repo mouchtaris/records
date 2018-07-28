@@ -115,5 +115,4 @@ object Incubate {
     val fc = fa flatMap bind
   }
 
-
 }

@@ -1,0 +1,4 @@
+package hm
+
+
+object PathLikeProof
