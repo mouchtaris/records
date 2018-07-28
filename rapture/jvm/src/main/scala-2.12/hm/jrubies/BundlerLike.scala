@@ -12,12 +12,14 @@ trait BundlerLike
   final def BUNDLE_PATH: RcPath = bundler_base / "gems"
   final def BUNDLE_APP_CONFIG: RcPath = bundler_base / "_bundle"
   final def BUNDLE_GEMFILE: RcPath = bundler_base / "Gemfile"
+  final def BUNDLE_CONFIG: RcPath = bundler_base / ".bundle"
 
   final def bundler_gem_env: Env =
     Env(
       constants = Map(
         Identifier("BUNDLER_VERSION") → Expression.string(BUNDLER_VERSION),
         Identifier("BUNDLE_GEMFILE") → Expression.string(BUNDLE_GEMFILE.path),
+        Identifier("BUNDLE_CONFIG") → Expression.string(BUNDLE_CONFIG.path),
       ),
       statements = Vector.empty
     )
@@ -35,4 +37,6 @@ trait BundlerLike
       "--gemfile" + BUNDLE_GEMFILE.path
   final def bundle_install_local: Command = bundle_install + "--local"
   final def bundle_package: Command = bundle + "package" + "--all"
+
+  final def pry: Command = bundle + "pry"
 }

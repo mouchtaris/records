@@ -120,9 +120,15 @@ object Main {
 
     //hm.Incubate.closed_type_classes.test()
     //return ()
-    if (false)
-      bun.bundle_help_install()
-    else
-      bun.bundle_install()
+    2 match {
+      case 1 ⇒
+        bun.bundle_help_install
+      case 2 ⇒
+        bun.bundle_install
+      case 3 ⇒
+        bun.gem.install_bundler
+      case _ ⇒
+        bun.pry
+    }()
   }
 }
