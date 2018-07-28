@@ -30,7 +30,7 @@ trait BundlerLike
   final def bundle_help_package: Command = bundle_help + "pacakge"
   final def bundle_install: Command =
     bundle + "install" +
-      "--path" + BUNDLE_PATH.path +
+      "--path" + bundler_base.self.relativize(BUNDLE_PATH.self).toString +
       "--no-cache" +
       "--gemfile" + BUNDLE_GEMFILE.path
   final def bundle_install_local: Command = bundle_install + "--local"

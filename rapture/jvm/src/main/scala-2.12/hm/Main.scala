@@ -80,6 +80,13 @@ object Main {
     // val rubocop = bundle_exec + BUNDLE_PATH.resolve("jruby/2.3.0/bin/rubocop").toString
   }
 
+  val bun = new BundlerLike {
+    val gem: GemLike = new GemLike {
+      val rc: RcPathManager = RcPathManager(jruby.INIT, jruby.RC_DIR_SOURCE)
+    }
+    val env: BundlerEnv = BundlerEnv.musae.api
+  }
+
   def main(args: Array[String]): Unit = {
     println("Geia soy theofile")
     println(1 :: 2 :: 3 :: "This is the shit" :: Nil)
@@ -110,13 +117,6 @@ object Main {
     //println {
     //  jruby.rails_console.args
     //}
-
-    val bun = new BundlerLike {
-      val gem: GemLike = new GemLike {
-        val rc: RcPathManager = RcPathManager(jruby.INIT, jruby.RC_DIR_SOURCE)
-      }
-      val env: BundlerEnv = BundlerEnv.musae.api
-    }
 
     //hm.Incubate.closed_type_classes.test()
     //return ()

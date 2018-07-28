@@ -1,13 +1,16 @@
 package hm
 package jrubies
 
+import
+  java.nio.file.Path
+
 final case class RcPath(
   man: RcPathManager,
-  self: java.nio.file.Path
+  self: Path
 ) {
   import scala.collection.JavaConverters._
 
-  protected[this] def resolvedSelf: java.nio.file.Path =
+  protected[this] def resolvedSelf: Path =
     if (man.init)
       man.rcRoot resolve self
     else
