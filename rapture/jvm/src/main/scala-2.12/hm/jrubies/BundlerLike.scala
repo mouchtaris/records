@@ -10,15 +10,12 @@ trait BundlerLike
 
   final def BUNDLER_VERSION = "1.16.2"
   final def BUNDLE_PATH: RcPath = bundler_base / "gems"
-  final def BUNDLE_APP_CONFIG: RcPath = bundler_base / "_bundle"
   final def BUNDLE_GEMFILE: RcPath = bundler_base / "Gemfile"
-  final def BUNDLE_CONFIG: RcPath = bundler_base / ".bundle"
 
   final def bundler_gem_env: Env = {
     val conf = Seq(
       "BUNDLER_VERSION" → BUNDLER_VERSION,
       "BUNDLE_GEMFILE" → BUNDLE_GEMFILE.path,
-      //"BUNDLE_CONFIG" → BUNDLE_CONFIG.path,
       "BUNDLE_PATH" -> BUNDLE_PATH.path,
     )
     val constants = conf

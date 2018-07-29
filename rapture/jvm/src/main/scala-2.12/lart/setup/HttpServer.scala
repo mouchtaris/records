@@ -28,13 +28,16 @@ case object HttpServer
 }
 
 class HttpServer(
+  implicit
   config: ConfigContext,
   akka: AkkaContext,
   logs: LoggingContext,
 ) {
   import HttpServer._
-  private[this] implicit val acsys: ActorSystem = akka.actorSystem
-  private[this] implicit val mat: Materializer = akka.materializer
+  import akka.{
+    actorSystem,
+    materializer,
+  }
 
   private[this] val logger: Logging.Logger = logs.factory[HttpServer]
   private[this] val finishPromise: Promise[Unit] = Promise()

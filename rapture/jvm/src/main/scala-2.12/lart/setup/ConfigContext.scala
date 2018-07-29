@@ -2,6 +2,7 @@ package lart.setup
 
 import hm.config.Config
 
-final case class ConfigContext(
-  config: Config
+final class ConfigContext(
+  implicit
+  val config: Config
 )

@@ -3,21 +3,23 @@ package lart.setup
 import akka.actor.ActorRef
 
 class Scene(
+  implicit
   config: hm.config.Config
 ) {
 
-  val configContext = ConfigContext(config)
-  val akkaContext = AkkaContext(configContext)
-  val loggingContext = LoggingContext(akkaContext)
+  implicit val configContext: ConfigContext = new ConfigContext
+  implicit val akkaContext: AkkaContext = new AkkaContext
+  implicit val loggingContext: LoggingContext = new LoggingContext
 
-  val httpServer = new HttpServer(configContext, akkaContext, loggingContext)
-  def tcpHandler: ActorRef = new TcpListener(akkaContext, loggingContext).handler
+  val httpServer = new HttpServer
+  def tcpHandler: ActorRef = new TcpListener().handler
 }
 
 object Scene {
-  def apply(): Scene =
-    apply(hm.config())
 
-  def apply(config: hm.config.Config): Scene =
-    new Scene(config)
+  def apply(): Scene = {
+    implicit val config: hm.config.Config = hm.config()
+    new Scene
+  }
+
 }

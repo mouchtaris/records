@@ -15,6 +15,7 @@ object TcpListener
   with TypeInfo[TcpListener]
 
 class TcpListener(
+  implicit
   akkaContext: AkkaContext,
   logs: LoggingContext,
 ) {
