@@ -14,18 +14,25 @@ trait BundlerLike
   final def BUNDLE_GEMFILE: RcPath = bundler_base / "Gemfile"
   final def BUNDLE_CONFIG: RcPath = bundler_base / ".bundle"
 
-  final def bundler_gem_env: Env =
-    Env(
-      constants = Map(
-        Identifier("BUNDLER_VERSION") → Expression.string(BUNDLER_VERSION),
-        Identifier("BUNDLE_GEMFILE") → Expression.string(BUNDLE_GEMFILE.path),
-        Identifier("BUNDLE_CONFIG") → Expression.string(BUNDLE_CONFIG.path),
-      ),
-      statements = Vector.empty
+  final def bundler_gem_env: Env = {
+    val conf = Seq(
+      "BUNDLER_VERSION" → BUNDLER_VERSION,
+      "BUNDLE_GEMFILE" → BUNDLE_GEMFILE.path,
+      //"BUNDLE_CONFIG" → BUNDLE_CONFIG.path,
+      "BUNDLE_PATH" -> BUNDLE_PATH.path,
     )
+    val constants = conf
+      .map { case (name, value) => Identifier(name) -> Expression.string(value) }
+    val statements = conf
+      .map { case (name, value) => Expression(s"ENV['$name'] = $name") }
+    Env(
+      constants = constants.toMap,
+      statements = statements :+ Expression("require 'bundler/setup'"),
+    )
+  }
 
   final def bundle: Command =
-    gem(bundler_gem_env, "bundler", "bundle")
+    gem(Env.empty, "bundler", "bundle")
 
   final def bundle_help: Command = bundle + "help"
   final def bundle_help_install: Command = bundle_help + "install"
@@ -38,5 +45,11 @@ trait BundlerLike
   final def bundle_install_local: Command = bundle_install + "--local"
   final def bundle_package: Command = bundle + "package" + "--all"
 
-  final def pry: Command = bundle + "pry"
+  final def apply(
+    gemName: String,
+    bin: String
+  ): Command =
+    gem(bundler_gem_env, gemName, bin)
+
+  final def pry: Command = this("pry", "pry")
 }

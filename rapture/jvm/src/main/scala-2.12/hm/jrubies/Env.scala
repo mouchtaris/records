@@ -19,3 +19,13 @@ final case class Env(
       .map(RbLine(_))
       .toRb
 }
+
+object Env {
+
+  def empty: Env =
+    Env(
+      constants = Map.empty,
+      statements = Seq.empty,
+    )
+
+}
