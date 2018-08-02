@@ -50,4 +50,6 @@ trait BundlerLike
     gem(bundler_gem_env, gemName, bin)
 
   final def pry: Command = this("pry", "pry")
+  final def haml: Command = this("haml", "haml")
+  final def haml_index: Command = haml + "rapture/jvm/src/main/resources/_bundler_envs/malthael/index.haml"
 }

@@ -32,13 +32,19 @@ object config {
     with ConfigObject[Server]
   {
     def name = "server"
+    def construct = new Server(_)
     def host = "host"
     def port = "port"
-    def construct = new Server(_)
+    def forwardScheme = "forwardScheme"
+    def forwardPort = "forwardPort"
+    def forwardHost = "forwardHost"
   }
   final class Server(val value: tsConfig) extends AnyVal {
     def host: String = value getString Server.host
     def port: Int = value getInt Server.port
+    def forwardScheme: String = value getString Server.forwardScheme
+    def forwardHost: String = value getString Server.forwardHost
+    def forwardPort: Int = value getInt Server.forwardPort
   }
 
   final object Config extends AnyRef

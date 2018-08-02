@@ -2,18 +2,14 @@ package lart
 package setup
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.model.Uri.Path
-import akka.stream.Materializer
-import lart.http.routes.{RouteCalled, Unhandled}
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.directives.{DebuggingDirectives, LoggingMagnet}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
-import hm.TypeInfo
+import hm.{TypeInfo, config}
+import lart.http.routes.{RouteCalled, Unhandled}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, Promise}
@@ -22,9 +18,7 @@ case object HttpServer
   extends AnyRef
   with TypeInfo[HttpServer]
 {
-
   def completePrefix: String = "stop"
-
 }
 
 class HttpServer(
@@ -34,14 +28,12 @@ class HttpServer(
   logs: LoggingContext,
 ) {
   import HttpServer._
-  import akka.{
-    actorSystem,
-    materializer,
-  }
+  import akka.{actorSystem, materializer}
 
   private[this] val logger: Logging.Logger = logs.factory[HttpServer]
   private[this] val finishPromise: Promise[Unit] = Promise()
   private[this] val finish: Future[Unit] = finishPromise.future
+  private[this] val conf = config.config.server
 
   logger.info("Good morning")
 
@@ -53,8 +45,9 @@ class HttpServer(
       val (vec1, vec2) = Await.result(vecsf, Duration.Inf)
       logger.info("vec1 = {} vec2 = {}", vec1.length, vec2.length)
       val uri2 = req.uri
-        .withHost("159.65.193.153")
-        .withPort(8090)
+        .withScheme(conf.forwardScheme)
+        .withHost(conf.forwardHost)
+        .withPort(conf.forwardPort)
       val req2 = req.withUri(uri2)
       logger.info("forwarding : {}", req2)
       http.singleRequest(req2)
@@ -112,7 +105,6 @@ class HttpServer(
       }
 
   def start(): Future[Unit] = {
-    val conf = config.config.server
     val http = Http()
     val handler = makeLoggingMiddleware.via(makeHandlerFlow(http))
     http

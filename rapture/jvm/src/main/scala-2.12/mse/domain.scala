@@ -21,7 +21,10 @@ trait domain {
   final object Email extends New[String]
   final type Email = Email.Tagged
 
-  type Account = Email :: cred.Type :: cred.Data :: Nil
-  val Account = Record[Account]
+  final type Account = Email :: cred.Type :: cred.Data :: Nil
+  final val Account = Record[Account]
+
+  final object Bio extends New[String]
+  final type Bio = Bio.Tagged
 
 }

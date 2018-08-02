@@ -4,6 +4,28 @@ object Main {
 
   object domain extends mse.domain
 
+  object async {
+    trait Future[T] extends Any {
+
+    }
+  }
+
+  object persist {
+
+  }
+
+  object op {
+
+  }
+
+  object accounting {
+    import async._
+    import persist._
+    def signUp[Account: domain.Account.e](account: Future[Account]): Any = {
+      ???
+    }
+  }
+
   object test {
     import list._
     import get._
