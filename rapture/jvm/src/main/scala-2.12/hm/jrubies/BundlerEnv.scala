@@ -16,4 +16,6 @@ object BundlerEnv {
     implicit val api = base / "rails_api"
   }
 
+  implicit val malthael = BundlerEnv("malthael")
+
 }

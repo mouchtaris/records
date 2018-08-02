@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.Promise
 import scala.util.Success
 
-object CompleteFuture {
+object RouteCalled {
 
   def apply(
     pathPrefix: String,

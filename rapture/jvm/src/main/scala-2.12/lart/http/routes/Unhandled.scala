@@ -10,9 +10,11 @@ import scala.concurrent.Future
 
 object Unhandled {
 
+  type Handler = HttpRequest ⇒ Future[HttpResponse]
+
   def apply(
-    handle: HttpRequest ⇒ Future[HttpResponse],
-    logger: Logging.Logger
+    handle: Handler,
+    logger: Logging.Logger,
   ): Route =
     extractRequest { req ⇒
       logger.warning("Unhandled request: {}", req)

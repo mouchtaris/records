@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.model.Uri.Path
 import akka.stream.Materializer
-import lart.http.routes.{CompleteFuture, Unhandled}
+import lart.http.routes.{RouteCalled, Unhandled}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LoggingMagnet}
@@ -45,14 +45,7 @@ class HttpServer(
 
   logger.info("Good morning")
 
-  private[this] def makeCompleteFuture: Route =
-    CompleteFuture(
-      pathPrefix = completePrefix,
-      completionPromise = finishPromise,
-      logger = logs.factory("<complete future>")
-    )
-
-  private[this] def forwardToPat(http: HttpExt): HttpRequest ⇒ Future[HttpResponse] =
+  private[this] def makeToPathForwarder(http: HttpExt): HttpRequest ⇒ Future[HttpResponse] =
     req ⇒ {
       val vec1f = req.entity.dataBytes.runWith(Sink.collection[ByteString, Vector[ByteString]])
       val vec2f = req.entity.dataBytes.runWith(Sink.collection[ByteString, Vector[ByteString]])
@@ -68,9 +61,16 @@ class HttpServer(
         .andThen { case res ⇒ logger.info("result came in: {}", res) }(Now)
     }
 
-  private[this] def makeUnhandled(http: HttpExt): Route =
+  private[this] def makeRouteCalledRoute: Route =
+    RouteCalled(
+      pathPrefix = completePrefix,
+      completionPromise = finishPromise,
+      logger = logs.factory("<complete future>")
+    )
+
+  private[this] def makeUnhandledRoute(http: HttpExt): Route =
     Unhandled(
-      handle = forwardToPat(http),
+      handle = makeToPathForwarder(http),
       logger = logs.factory("<unhandled>")
     )
 
@@ -101,12 +101,15 @@ class HttpServer(
     handleExceptions(makeExceptionHandler) & handleRejections(makeRejectionHandler) & logRequest("A REQUEST")
 
   private[this] def makeHandlerFlow(http: HttpExt): Flow[HttpRequest, HttpResponse, NotUsed] =
-    makeRequestHandlingContext {
-      concat(
-        makeUnhandled(http),
-        makeCompleteFuture
-      )
-    }
+    makeLoggingMiddleware
+      .via {
+        makeRequestHandlingContext {
+          concat(
+            makeUnhandledRoute(http),
+            makeRouteCalledRoute
+          )
+        }
+      }
 
   def start(): Future[Unit] = {
     val conf = config.config.server

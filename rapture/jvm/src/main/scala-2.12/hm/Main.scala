@@ -24,7 +24,9 @@ object Main {
     val gem: GemLike = new GemLike {
       val rc: RcPathManager = RcPathManager(jruby.INIT, jruby.RC_DIR_SOURCE)
     }
-    val env: BundlerEnv = BundlerEnv.musae.api
+    val env: BundlerEnv = BundlerEnv
+      .musae.api
+      //.malthael
   }
 
   def main(args: Array[String]): Unit = {
@@ -43,7 +45,7 @@ object Main {
 //    s.binding.foreach(println)
     //hm.Incubate.closed_type_classes.test()
     (
-      4 match {
+      2 match {
         case 1 ⇒
           bun.bundle_help_install
         case 2 ⇒
@@ -52,6 +54,8 @@ object Main {
           bun.gem.install_bundler
         case 4 ⇒
           bun.pry
+        case 5 ⇒
+          bun.bundle_init
       }
     )()
   }
