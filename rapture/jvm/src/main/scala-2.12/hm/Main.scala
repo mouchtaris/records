@@ -25,8 +25,8 @@ object Main {
       val rc: RcPathManager = RcPathManager(jruby.INIT, jruby.RC_DIR_SOURCE)
     }
     val env: BundlerEnv = BundlerEnv
-      //.musae.api
-      .malthael
+      .musae.api
+      //.malthael
   }
 
   def main(args: Array[String]): Unit = {
@@ -45,7 +45,7 @@ object Main {
 //    s.binding.foreach(println)
     //hm.Incubate.closed_type_classes.test()
     (
-      6 match {
+      2 match {
         case 1 ⇒
           bun.bundle_help_install
         case 2 ⇒
