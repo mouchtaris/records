@@ -5,65 +5,63 @@ import list._
 import list_case._
 import to_string._
 import list_to_string._
+import pf._
+import list_map._
 
-trait PF[F, A, B] { def apply(a: A): B }
-object PF {
-  implicit class Applicator[F](val unit: Unit) extends AnyVal {
-    def apply[A, R](a: A)(implicit pf: PF[F, A, R]): R = pf(a)
+object list_collect {
+  trait Collect[F, L, R] extends Any {
+    def apply(list: L): R
   }
 
-  def apply[F]: Applicator[F] = ()
+  trait CollectLow extends Any {
+    implicit def collectNil[
+      F,
+      L
+    ]: Collect[F, L, L] =
+      identity[L] _
+  }
+
+  trait CollectHigh extends Any  with CollectLow {
+    implicit def collectList[
+      F,
+      L,
+      H: List[L]#Head,
+      T: List[L]#Tail,
+      R,
+    ](
+      implicit
+      tr: Collect[F, T, R],
+      pf: PF[F, (R, H), R],
+    ): Collect[F, L, R] =
+      list ⇒
+        pf((tr(list.tail), list.head))
+  }
+
+  final class BindF[F](val unit: Unit) extends AnyVal {
+    def apply[L, R](list: L)(implicit collect: Collect[F, L, R]): R =
+      collect(list)
+  }
+
+  trait CollectCompanion
+    extends Any
+    with CollectHigh
+  {
+    def apply[F] = new BindF[F](())
+  }
+
+  object Collect
+    extends AnyRef
+    with CollectCompanion
 }
 
-
-final class Applied[F, L](val value: L)
-object Applied {
-  implicit def head[
-    F,
-    L,
-    H: List[L]#Head,
-    R: Main.Defined[F]#At[H]#Result,
-  ]: Head[Applied[F, L], R] =
-    applied ⇒ {
-      val list: L = applied.value
-      val head: H = list.head
-      val result: R = PF[F](head)
-      result
-    }
-
-  implicit def tail[
-    F,
-    L,
-    T: List[L]#Tail,
-  ]: Tail[Applied[F, L], Applied[F, T]] =
-    applied ⇒
-      new Applied[F, T](applied.value.tail)
-}
+import list_collect._
 
 object Main {
-
-  type Defined[F] = {
-    type At[A] = {
-      type Result[B] = PF[F, A, B]
-    }
-  }
-  type StringPF = StringPF.type
-  object StringPF {
-    implicit def stringPF[T: ToString]: PF[StringPF, T, String] = _.string
-  }
-
   type Inspect = Inspect.type
   object Inspect {
     implicit def pf[T]: PF[Inspect, T, String] =
       obj ⇒
         s"${obj.getClass}[$obj]"
-  }
-
-  final implicit class Apply[F](val unit: Unit) extends AnyVal
-  object Apply {
-    implicit def pf[F, L]: PF[Apply[F], L, Applied[F, L]] =
-        list ⇒
-          new Applied[F, L](list)
   }
 
   def main(args: Array[String]): Unit = {
@@ -72,6 +70,8 @@ object Main {
     import list_case._
     val a @ s :: i :: nil = "12" ::: 12 ::: Nil
     a.string
+    Collect[Inspect](a)
+      // Collect.collectList[Inspect, String ::: Int ::: Nil.type, String, Int ::: Nil.type, String]
     println((s: String).string)
     println((i: Int).string)
     println((nil: Nil.type).string)
