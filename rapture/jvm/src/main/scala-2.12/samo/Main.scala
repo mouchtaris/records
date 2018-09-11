@@ -77,5 +77,6 @@ object Main {
     println((nil: Nil.type).string)
     println(12.string)
     println("HJel")
+    Examples.test()
   }
 }
