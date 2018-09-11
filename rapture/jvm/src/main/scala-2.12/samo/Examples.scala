@@ -9,12 +9,12 @@ object Examples {
     }
     sealed trait `12 :: hello`
     sealed trait `hello`
-    object hello extends hello
+    def hello: hello = new hello { }
 
     sealed trait List extends `12 :: hello`
     def List(): List = new List { }
     implicit def firstHead: `12 :: hello` Head Int = _ ⇒ 12
-    implicit def firstTail: `12 :: hello` Tail hello = hello
+    implicit def firstTail: `12 :: hello` Tail hello = _ ⇒ hello
   }
   object generic_list_provider extends generic_list_provider
 
@@ -34,10 +34,10 @@ object Examples {
 
   def test_generic_list(): Unit = {
     import list._
-    import generic_list_provider.List
+    import generic_list_provider.{ List, hello }
     val li = List()
     use { li.head: Int }
-    use { li.tail: List }
+    use { li.tail: hello }
   }
 
   def test_list_map(): Unit = {
