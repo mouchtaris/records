@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
 git clone https://github.com/pyenv/pyenv.git "$PYENV_ROOT" &&
-pip install --user --upgrade pip &&
-pip install --user pipenv &&
+env PIP_UPGRADE=true pip install pip &&
+pip install pipenv &&
 hash -r &&
+exit 0 ||
+exit 1
+
+
 pip install --user psycopg2-binary &&
 env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&
 sudo mkdir -p /var/postgresql &&

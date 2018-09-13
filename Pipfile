@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 apache-airflow = "*"
 psycopg2-binary = "*"
+setuptools = "*"
+pip = "*"
 
 [dev-packages]
 

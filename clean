@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 pg_ctl stop
-rm -rfv \
+
+for f in \
   "$AIRFLOW_HOME" \
   "$AIRFLOW_LOGS" \
   "$AIRFLOW_SCHEDULER_LOGS" \
@@ -16,4 +17,8 @@ rm -rfv \
   $HOME/.cache/pypoetry/ \
   $HOME/.local/app/miniconda/envs/ \
   $HOME/.local/bin/ \
-  $HOME/.local/lib/
+  $HOME/.local/lib/ \
+; do
+  echo Killing "$f" ...
+  rm -rfv "$f"
+done
