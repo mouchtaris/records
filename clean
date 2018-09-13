@@ -2,14 +2,19 @@
 
 pg_ctl stop
 rm -rfv \
-  _airflow_home/ \
+  "$PGDATA" \
+  "$PYENV_ROOT" \
+  "$AIRFLOW_HOME" \
+  "$AIRFLOW_LOGS" \
+  "$AIRFLOW_SCHEDULER_LOGS" \
+  "$PIPENV_CACHE_DIR" \
+  "$WORKON_HOME" \
+  .venv/ \
   _pip/ \
-  _pip_cache/ \
-  .venvs/ \
+  _py36/ \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
   $HOME/.cache/pypoetry/ \
   $HOME/.local/app/miniconda/envs/ \
   $HOME/.local/bin/ \
-  $HOME/.local/lib/ \
-  $HOME/_postgres.db
+  $HOME/.local/lib/
