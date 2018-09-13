@@ -1,0 +1,11 @@
+[tool.poetry]
+name = "1wssi"
+version = "0.1.0"
+description = ""
+authors = ["Nikos Mouchtaris <nikos.mouchtaris@nike.com>"]
+
+[tool.poetry.dependencies]
+python = "*"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"

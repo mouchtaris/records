@@ -1,0 +1,11 @@
+rm -rfv \
+  _airflow_home/ \
+  _pip/ \
+  _pip_cache/ \
+  .venvs/ \
+  $HOME/.cache/pip/ \
+  $HOME/.cache/pipenv/ \
+  $HOME/.cache/pypoetry/ \
+  $HOME/.local/app/miniconda/envs/ \
+  $HOME/.local/bin/ \
+  $HOME/.local/lib/

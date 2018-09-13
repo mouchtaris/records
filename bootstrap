@@ -1,0 +1,5 @@
+pip install --user --upgrade pip &&
+pip install --user psycopg2-binary &&
+export AIRFLOW_HOME="$( pwd )"/_airflow_home &&
+env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&
+true
