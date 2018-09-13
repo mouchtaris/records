@@ -1,5 +1,14 @@
+#!/usr/bin/env bash
+
 pip install --user --upgrade pip &&
+hash -r &&
 pip install --user psycopg2-binary &&
 export AIRFLOW_HOME="$( pwd )"/_airflow_home &&
 env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&
+sudo mkdir -p /var/postgresql &&
+sudo chmod 777 /var/postgresql &&
+pg_ctl initdb &&
+pg_ctl start &&
+createuser airf &&
+createdatabase airf &&
 true

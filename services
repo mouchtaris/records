@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+airflow webserver -p 8080 &
+airflow_webserver_pid=$!
+echo pif = $airflow_webserver_pid
+
+echo hit entar....
+read
+kill -INT $airflow_webserver_pid
