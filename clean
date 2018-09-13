@@ -2,16 +2,15 @@
 
 pg_ctl stop
 rm -rfv \
-  "$PGDATA" \
-  "$PYENV_ROOT" \
   "$AIRFLOW_HOME" \
   "$AIRFLOW_LOGS" \
   "$AIRFLOW_SCHEDULER_LOGS" \
+  "$PGDATA" \
   "$PIPENV_CACHE_DIR" \
+  "$PIP_ROOT" \
+  "$PYENV_ROOT" \
   "$WORKON_HOME" \
   .venv/ \
-  _pip/ \
-  _py36/ \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
   $HOME/.cache/pypoetry/ \
