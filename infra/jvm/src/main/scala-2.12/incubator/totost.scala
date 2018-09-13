@@ -85,19 +85,19 @@ object totost {
       }
       .mapAsync(100)(identity)
 
-    val handlers8080: Seq[(Uri.Path, Handler)] = Seq(
+    val leonHandlers: Seq[(Uri.Path, Handler)] = Seq(
       Uri.Path./("leon") → leon.httpHandler,
     )
-    val handler8080 = new gv.http.Multiplexor(handlers8080: _*).handler
+    val leonHandler = new gv.http.Multiplexor(leonHandlers: _*).handler
     val handlers8081: Seq[(Uri.Path, Handler)] = Seq(
       Uri.Path./("mlol") → lolHandler,
     )
     val handler8081 = new gv.http.Multiplexor(handlers8081: _*).handler
 
     val futureBinding8080 = http.bindAndHandle(
-      handler = handler8080,
-      interface = "0.0.0.0",
-      port = 8080
+      handler = leonHandler,
+      interface = leonConf.server.host,
+      port = leonConf.server.port,
     )
     val futureBinding8081 = http.bindAndHandle(
       handler = handler8081,

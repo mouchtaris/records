@@ -31,6 +31,9 @@ package object config
       def PACKAGE_SOURCE = "package_source"
       def package_source: PackageSource.Ext = get { PACKAGE_SOURCE }
 
+      def SERVER = "server"
+      def server: Server.Ext = get { SERVER }
+
     }
 
   }
