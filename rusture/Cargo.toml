@@ -1,0 +1,7 @@
+[package]
+name = "rusture"
+version = "0.1.0"
+authors = ["Nikos Mouchtaris <nikos.mouchtaris@redtulipsystems.com>"]
+
+[dependencies]
+regex = "1"
