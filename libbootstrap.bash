@@ -48,6 +48,11 @@ function _load_env() {
   [ -f "$src" ] && source "$src"
 }
 
+function _gitmaster() {
+  local default_gitmaster=https://github.com
+  echo "${GITMASTER:-$default_gitmaster}"
+}
+
 
 
 
@@ -104,13 +109,13 @@ function _install () {
 ##    _install_unless_installed pyenv
 ##
 function _install_unless_installed() {
-  local name="$1"; shift;
+  local pkg="$1"; shift;
 
-  if ! $"_is_${name}_installed"
+  if ! _is_installed "$pkg"
   then
-    $"_install_$name"
+    _install "$pkg"
   else
-    echo "Skipping installing $name ..."
+    echo "Skipping installing $pkg..."
   fi
 }
 
@@ -126,7 +131,7 @@ function _install_unless_installed() {
 ## PyEnv ##
 _pyenv_target_dir="$PYENV_ROOT"
 function _is_pyenv_installed() { [ -d "$_pyenv_target_dir" ]; }
-function _install_pyenv() { git clone "$GITMASTER"/pyenv/pyenv.git "$PYENV_ROOT"; }
+function _install_pyenv() { git clone "$( _gitmaster )"/pyenv/pyenv.git "$PYENV_ROOT"; }
 
 ##
 ## Python ##
@@ -148,16 +153,20 @@ function _install_python() { pyenv install; }
 function _print_envs() {
   for env in PYTHON PYENV PIP AIRFLOW
   do
-    echo ===
+    echo
+    printf '=== %-10s ===\n' "$env"
     printenv | grep "$env"
   done
-  echo ===
+  echo
+  echo === '</>' ===
 }
 
 ##
 ## Load the given environment and fail if loading fails.
 ##
 function _configure() {
+  local env="$1"; shift
+
   _load_env "$env" ||
     _err_and_die "$( printf 'No such environemnt: %s' "$env" )"
 }
@@ -171,33 +180,3 @@ function _install_pkg() {
   _install_unless_installed "$pkg" ||
     _err_and_die "$( printf 'Failed during "installation"-unless-installed of %s' "$pkg" )"
 }
-
-##
-## 
-##
-exit 0
-
-for pkg in \
-  pyenv \
-  python
-do
-  _install_unless_installed "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
-done &&
-exit 0 ||
-exit 1
-
-if ! _is_pyenv_installed; then _install_pyenv; fi
-_install_python &&
-_upgrade_pip &&
-exit 0
-exit 1
-
-pip install --user psycopg2-binary &&
-env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&
-sudo mkdir -p /var/postgresql &&
-sudo chmod 777 /var/postgresql &&
-pg_ctl initdb &&
-pg_ctl start &&
-createuser airf &&
-createdatabase airf &&
-true
