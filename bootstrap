@@ -1,12 +1,40 @@
 #!/usr/bin/env bash
 
-git clone https://github.com/pyenv/pyenv.git "$PYENV_ROOT" &&
-env PIP_UPGRADE=true pip install pip &&
-pip install pipenv &&
-hash -r &&
+
+###
+### ## Argument Check
+###
+if [[ $(($#)) < 1 ]]
+then
+  _err_and_die "$( printf 'Syntax:\n  %s ENV\n\n  ENV:\n    One of the environments in %s' "$0" "$_envs_dir" )"
+fi
+
+env=$1; shift;
+if [ -z "$env" ]
+then
+  _err_and_die 'ENV (argv[0]) cannot be empty'
+fi
+
+function _upgrade_pip() {
+  env PIP_UPGRADE=true pip install pip
+}
+
+_load_env "$env" || _err_and_die 'no such env'
+
+for pkg in \
+  pyenv \
+  python
+do
+  _install_unless_installed "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
+done &&
 exit 0 ||
 exit 1
 
+if ! _is_pyenv_installed; then _install_pyenv; fi
+_install_python &&
+_upgrade_pip &&
+exit 0
+exit 1
 
 pip install --user psycopg2-binary &&
 env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&

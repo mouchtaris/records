@@ -11,6 +11,7 @@ for f in \
   "$PIP_ROOT" \
   "$PYENV_ROOT" \
   "$WORKON_HOME" \
+  "$PYTHON_BUILD_CACHE_PATH" \
   .venv/ \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
@@ -20,5 +21,5 @@ for f in \
   $HOME/.local/lib/ \
 ; do
   echo Killing "$f" ...
-  rm -rfv "$f"
+  rm -rf "$f"
 done
