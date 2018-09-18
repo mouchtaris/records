@@ -231,6 +231,19 @@ function _pip_get_version () {
 ###
 
 ##
+## Directories
+function _is_directories_installed() { false; } # Omnipotent and fast installation
+function _install_directories() {
+  for f in \
+    "$PYTHON_BUILD_CACHE_PATH" \
+    "$PIPENV_CACHE_DIR" \
+    "$PIP_CACHE_DIR"
+  do
+    mkdir -pv "$f"
+  done
+}
+
+##
 ## PyEnv ##
 _pyenv_target_dir="$PYENV_ROOT"
 function _pyenv_git_source() { echo "$( _gitmaster )"/pyenv/pyenv.git; }

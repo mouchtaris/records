@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-pg_ctl stop 2>&1;
+pg_ctl stop 1>/dev/null 2>&1;
 
 #  "$PYTHON_BUILD_CACHE_PATH" \
 #  "$PIP_CACHE_DIR" \
@@ -15,7 +15,7 @@ for f in \
   "$PYENV_ROOT" \
   "$WORKON_HOME" \
   .venv/ \
-  "_VENV_ROOT" \
+  "$_VENV_ROOT" \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
   $HOME/.cache/pypoetry/ \
@@ -23,7 +23,13 @@ for f in \
   $HOME/.local/bin/ \
   $HOME/.local/lib/ \
 ; do
-  nfiles="$( [ -f "$f" -o -d "$f" ] && find "$f" -type f | wc -l || echo '0' )"
-  printf '[%5d] Killing %s ...\n' "$nfiles" "$f"
-  rm -rf "$f"
+  if [ -n "$f" -a \( -f "$f" -o -d "$f" \) ]
+  # Proceed only if $f is a file, directory and is not an empty string
+  then
+    nfiles="$( find "$f" -type f | wc -l || echo '0' )"
+    printf '[%5d] Killing %s ...\n' "$nfiles" "$f"
+    rm -rf "$f"
+  else
+    printf '[%5s] Skipping non existent %s\n' '' "$f"
+  fi
 done

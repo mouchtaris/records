@@ -4,11 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-apache-airflow = {extras = ["celery", "s3", "crypto", "kubernetes"], version = ">=1.8.2"}
+#apache-airflow = {extras = ["celery", "s3", "crypto", "kubernetes"], version = ">=1.8.2"}
+apache-airflow = "*"
 psycopg2-binary = "*"
-setuptools = "*"
-pip = "*"
-virtualenv = "*"
 
 [dev-packages]
 
