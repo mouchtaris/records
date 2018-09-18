@@ -48,10 +48,39 @@ function _load_env() {
   [ -f "$src" ] && source "$src"
 }
 
+##
+## Print the root location of git-master
+##
+## This value is sourced from Configuration and
+## this function inserts a default-value guard.
+##
 function _gitmaster() {
   local default_gitmaster=https://github.com
   echo "${GITMASTER:-$default_gitmaster}"
 }
+
+##
+## Value of PYTHON_BUILD_MIRROR_URL
+##
+function _conf__python_build_mirror_url() {
+  echo "$PYTHON_BUILD_MIRROR_URL"
+}
+
+##
+## The required pip major version
+function _conF__pip_major() { echo "$_PIP_REQUIRED_MAJOR"; }
+##
+## The required pip minor version
+function _conf__pip_minor() { echo "$_PIP_REQUIRED_MINOR"; }
+##
+## The required pip version
+function _conf__pip_required_version() {
+  echo \
+    "$( _conF__pip_major )" \
+    "$( _conf__pip_minor )"
+}
+
+
 
 
 
@@ -119,6 +148,36 @@ function _install_unless_installed() {
   fi
 }
 
+##
+## Compare versions
+##
+## v1j.v1m >= v2j.v2m
+##
+## # Arguments
+## * v1j    : version 1 major
+## * v1m    : version 1 minor
+## * v2j    : version 2 major
+## * v2m    : version 2 minor
+##
+## # Example
+##
+##    _is_verion_at_least $v_maj $v_min 2 1 || _install_pkg $smth
+##
+function _is_version_at_least() {
+  local v1j="$1"; shift
+  local v1m="$1"; shift
+  local v2j="$1"; shift
+  local v2m="$1"; shift
+  [[
+      $((v1j)) > $((v2j))
+    ||
+        $((v1j)) == $((v2j))
+      &&
+      (   $((v1m)) > $((v2m))
+        ||
+          $((v1m)) == $((v2m)) )
+  ]]
+}
 
 
 
@@ -135,8 +194,16 @@ function _install_pyenv() { git clone "$( _gitmaster )"/pyenv/pyenv.git "$PYENV_
 
 ##
 ## Python ##
-function _is_python_installed() { false; }
+function _is_python_installed() { pyenv which python >/dev/null 2>&1; }
 function _install_python() { pyenv install; }
+
+function _pip_get_version () {
+  pip show pip |
+    sed -r -n -e '/.*Version: ([[:digit:]]+)\.([[:digit:]]+).*/s//\1 \2/p'
+}
+
+function _is_pip_installed() { _is_version_at_least $( _pip_get_version ) $( _conf__pip_required_version ); }
+function _install_pip() { env PIP_UPGRADE=true pip install pip; }
 
 
 

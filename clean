@@ -2,6 +2,8 @@
 
 pg_ctl stop
 
+#  "$PYTHON_BUILD_CACHE_PATH" \
+
 for f in \
   "$AIRFLOW_HOME" \
   "$AIRFLOW_LOGS" \
@@ -11,7 +13,6 @@ for f in \
   "$PIP_ROOT" \
   "$PYENV_ROOT" \
   "$WORKON_HOME" \
-  "$PYTHON_BUILD_CACHE_PATH" \
   .venv/ \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
