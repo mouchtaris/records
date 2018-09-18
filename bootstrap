@@ -21,7 +21,8 @@ _configure "$env"
 for pkg in \
   pyenv \
   python \
-  pip
+  pip \
+  psycopg
 do
   _install_pkg "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
 done &&

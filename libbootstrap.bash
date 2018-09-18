@@ -179,6 +179,21 @@ function _is_version_at_least() {
   ]]
 }
 
+##
+## Extract the version from a pip package
+##
+## The version is echoed as
+##
+##    MAJOR MINOR
+##
+function _pip_get_version () {
+  local pkg="$1"; shift;
+
+  pip show "$pkg" |
+    sed -r -n -e '/.*Version: ([[:digit:]]+)\.([[:digit:]]+).*/s//\1 \2/p'
+}
+
+
 
 
 
@@ -197,13 +212,15 @@ function _install_pyenv() { git clone "$( _gitmaster )"/pyenv/pyenv.git "$PYENV_
 function _is_python_installed() { pyenv which python >/dev/null 2>&1; }
 function _install_python() { pyenv install; }
 
-function _pip_get_version () {
-  pip show pip |
-    sed -r -n -e '/.*Version: ([[:digit:]]+)\.([[:digit:]]+).*/s//\1 \2/p'
-}
-
+##
+## Pip
 function _is_pip_installed() { _is_version_at_least $( _pip_get_version ) $( _conf__pip_required_version ); }
 function _install_pip() { env PIP_UPGRADE=true pip install pip; }
+
+##
+## PsycoPG
+function _is_psycopg_installed() { false; } # Let pip figure this out
+function _install_psycopg() { pip install psycopg2-binary; }
 
 
 
