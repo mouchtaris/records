@@ -5,19 +5,40 @@ source libbootstrap.bash
 ###
 ### ## Argument Check
 ###
+
+#
+# Check for correct number of arguments
+#
 if [[ $(($#)) < 1 ]]
 then
   _err_and_die "$( printf 'Syntax:\n  %s ENV\n\n  ENV:\n    One of the environments in %s' "$0" "$_envs_dir" )"
 fi
 
+#
+# Extract ENV arg
+#
 env=$1; shift;
 if [ -z "$env" ]
 then
   _err_and_die 'ENV (argv[0]) cannot be empty'
 fi
 
+###
+### ## Configuration
+###
+
+#
+# Configure according to ENV
+#
 _configure "$env"
 
+###
+### ## Subcommand dispatch
+###
+
+#
+# If a subcommand is given, evaluate
+#
 if [ -n "$1" ]
 then
   # Extra arguments given.
@@ -27,16 +48,25 @@ then
   exit $?
 fi
 
+###
+### ## Installations
+###
+
+#
+# If no subcommand is given, install the following packages
+# in the following order
+#
+pkgs=(
+  directories
+  pyenv
+  venv
+  pip
+  pipenv
+)
 #   python \
 #   psycopg \
 #   airflow
-for pkg in \
-  directories \
-  pyenv \
-  venv \
-  pip \
-  pipenv \
-
+for pkg in "${pkgs[@]}"
 do
   _install_pkg "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
 done &&

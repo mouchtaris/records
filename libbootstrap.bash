@@ -67,18 +67,45 @@ function _conf__python_build_mirror_url() {
 }
 
 ##
-## The required pip major version
-function _conF__pip_major() { echo "$_PIP_REQUIRED_MAJOR"; }
+## Get a version requirement for a package
+## from configuration.
 ##
-## The required pip minor version
-function _conf__pip_minor() { echo "$_PIP_REQUIRED_MINOR"; }
+## Version is described by a package name
+## and a version level.
 ##
-## The required pip version
-function _conf__pip_required_version() {
-  echo \
-    "$( _conF__pip_major )" \
-    "$( _conf__pip_minor )"
+## Package name + version level respond to a
+## specific variable set through config.
+##
+##    _${package}_REQUIRED_${level}
+##
+function _conf__pkg_ver() {
+  local name="$1"; shift;
+  local level="$1"; shift;
+
+  local varname='$_'"$name"'_REQUIRED_'"$level"
+  local result="$( eval "$varname" )"
+
+  if [ -z "$result" ]
+  then
+    _err_and_die "$( printf 'No version requirement found for %s @%s (%s)' "$name" "$level" "$varname" )"
+  fi
 }
+##
+## Alias for version level MAJOR
+function _conf__pkg_ver_major() { _conf__pkg_ver "$1" 'MAJOR'; }
+##
+## Alias for version level MINOR
+function _conf__pkg_ver_minor() { _conf__pkg_ver "$1" 'MINOR'; }
+##
+## Alias for version "MAJOR MINOR"
+function _conf__pkg_ver_major_minor() {
+  local name="$1"; shift;
+
+  echo \
+    "$( _conf__pkg_ver_major "$name" )" \
+    "$( _conf__pkg_ver_minor "$name" )"
+}
+
 ##
 ## Evaluate an expression in the given environment
 function _conf_at() {
@@ -171,6 +198,7 @@ function _install_unless_installed() {
 
   if ! _is_installed "$pkg"
   then
+    echo "Installing $pkg ..."
     _install "$pkg"
   else
     echo "Skipping installing $pkg..."
@@ -239,7 +267,12 @@ function _install_directories() {
     "$PIPENV_CACHE_DIR" \
     "$PIP_CACHE_DIR"
   do
-    mkdir -pv "$f"
+    if [ -n "$f" ]
+    then
+      mkdir -pv "$f"
+    else
+      printf 'Skipping empty name ...\n'
+    fi
   done
 }
 
@@ -253,7 +286,7 @@ function _install_pyenv() { git clone "$( _pyenv_git_source )" "$PYENV_ROOT"; }
 ##
 ## VEnv
 function _venv_activate() { source "$_VENV_ROOT"/bin/activate; which python; which pip; }
-function _is_venv_installed() { false; }
+function _is_venv_installed() { ( _venv_activate 2>&1 1>/dev/null ); }
 function _install_venv() { python -m venv "$_VENV_ROOT"; }
 
 
@@ -264,12 +297,12 @@ function _install_python() { pyenv install; }
 
 ##
 ## Pip
-function _is_pip_installed() { _is_version_at_least $( _pip_get_version pip ) $( _conf__pip_required_version ); }
+function _is_pip_installed() { _is_version_at_least $( _pip_get_version pip ) $( _conf__pkg_ver_major_minor 'PIP' ); }
 function _install_pip() { env PIP_UPGRADE=true pip install pip; }
 
 ##
 ## Pipenv
-function _is_pipenv_installed() { false; } # Let pip figure this out
+function _is_pipenv_installed() { _is_version_at_least $( _pip_get_version pipenv ) $( _conf__pkg_ver_major_minor 'PIPENV' ); }
 function _install_pipenv() { pip install pipenv; }
 
 ##
