@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
 
-pg_ctl stop
+pg_ctl stop 2>&1;
 
 #  "$PYTHON_BUILD_CACHE_PATH" \
+#  "$PIP_CACHE_DIR" \
+#  "$PIPENV_CACHE_DIR" \
 
 for f in \
   "$AIRFLOW_HOME" \
   "$AIRFLOW_LOGS" \
   "$AIRFLOW_SCHEDULER_LOGS" \
   "$PGDATA" \
-  "$PIPENV_CACHE_DIR" \
   "$PIP_ROOT" \
   "$PYENV_ROOT" \
   "$WORKON_HOME" \
   .venv/ \
+  "_VENV_ROOT" \
   $HOME/.cache/pip/ \
   $HOME/.cache/pipenv/ \
   $HOME/.cache/pypoetry/ \
@@ -21,6 +23,7 @@ for f in \
   $HOME/.local/bin/ \
   $HOME/.local/lib/ \
 ; do
-  echo Killing "$f" ...
+  nfiles="$( [ -f "$f" -o -d "$f" ] && find "$f" -type f | wc -l || echo '0' )"
+  printf '[%5d] Killing %s ...\n' "$nfiles" "$f"
   rm -rf "$f"
 done

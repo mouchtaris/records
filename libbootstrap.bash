@@ -79,6 +79,35 @@ function _conf__pip_required_version() {
     "$( _conF__pip_major )" \
     "$( _conf__pip_minor )"
 }
+##
+## Evaluate an expression in the given environment
+function _conf_at() {
+  local env="$1"; shift;
+
+  (
+    _configure "$env" &&
+      eval "$@"
+  )
+}
+
+
+
+
+
+
+###
+### ## Local mirroring
+###
+
+##
+## Initialize local mirrors (git repoes, PIP mirrors, etc)
+##
+function _local_mirrors() {
+  git clone \
+    --mirror \
+    "$( _conf_at deploy _pyenv_git_source )" \
+    "$( _conf_at local _pyenv_git_source )"
+}
 
 
 
@@ -204,8 +233,16 @@ function _pip_get_version () {
 ##
 ## PyEnv ##
 _pyenv_target_dir="$PYENV_ROOT"
+function _pyenv_git_source() { echo "$( _gitmaster )"/pyenv/pyenv.git; }
 function _is_pyenv_installed() { [ -d "$_pyenv_target_dir" ]; }
-function _install_pyenv() { git clone "$( _gitmaster )"/pyenv/pyenv.git "$PYENV_ROOT"; }
+function _install_pyenv() { git clone "$( _pyenv_git_source )" "$PYENV_ROOT"; }
+
+##
+## VEnv
+function _venv_activate() { source "$_VENV_ROOT"/bin/activate; which python; which pip; }
+function _is_venv_installed() { false; }
+function _install_venv() { python -m venv "$_VENV_ROOT"; }
+
 
 ##
 ## Python ##
@@ -214,13 +251,26 @@ function _install_python() { pyenv install; }
 
 ##
 ## Pip
-function _is_pip_installed() { _is_version_at_least $( _pip_get_version ) $( _conf__pip_required_version ); }
+function _is_pip_installed() { _is_version_at_least $( _pip_get_version pip ) $( _conf__pip_required_version ); }
 function _install_pip() { env PIP_UPGRADE=true pip install pip; }
+
+##
+## Pipenv
+function _is_pipenv_installed() { false; } # Let pip figure this out
+function _install_pipenv() { pip install pipenv; }
 
 ##
 ## PsycoPG
 function _is_psycopg_installed() { false; } # Let pip figure this out
 function _install_psycopg() { pip install psycopg2-binary; }
+
+##
+## Apache Airflow
+function _is_airflow_installed() { false; } # Let pip figure this out
+function _install_airflow() {
+  env AIRFLOW_GPL_UNIDECODE=yes \
+    pip install apache-airflow'[celery, crypto, s3, kubernetes]'
+}
 
 
 
@@ -251,7 +301,11 @@ function _print_envs() {
 function _configure() {
   local env="$1"; shift
 
-  _load_env "$env" ||
+  {
+    _load_env '_common' &&
+    _load_env "$env" &&
+    export _CURRENT_ENV="$env"
+  } ||
     _err_and_die "$( printf 'No such environemnt: %s' "$env" )"
 }
 

@@ -18,19 +18,30 @@ fi
 
 _configure "$env"
 
+if [ -n "$1" ]
+then
+  # Extra arguments given.
+  # Dispatch to command:
+  comm=_"$1"; shift;
+  eval $comm ${@}
+  exit $?
+fi
+
+#   python \
+#   psycopg \
+#   airflow
 for pkg in \
   pyenv \
-  python \
+  venv \
   pip \
-  psycopg
+  pipenv \
+
 do
   _install_pkg "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
 done &&
 exit 0 ||
 exit 1
 
-pip install --user psycopg2-binary &&
-env AIRFLOW_GPL_UNIDECODE=yes pip install --user apache-airflow'[celery, crypto, s3, kubernetes]' &&
 sudo mkdir -p /var/postgresql &&
 sudo chmod 777 /var/postgresql &&
 pg_ctl initdb &&
