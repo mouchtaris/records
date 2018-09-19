@@ -41,6 +41,7 @@ fi
 pkgs=(
   directories
   pyenv
+  python
   venv
   venv_activate
   pip
