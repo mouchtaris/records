@@ -39,9 +39,9 @@ _envs_dir=./envs
 ##
 ## # Example
 ##
-##    _load_env 'local' || _err_and_die 'No such env: local'
+##    _conf__load 'local' || _err_and_die 'No such env: local'
 ##
-function _load_env() {
+function _conf__load() {
   local env="$1"; shift;
 
   local src="$_envs_dir/$env.bash"
@@ -54,7 +54,7 @@ function _load_env() {
 ## This value is sourced from Configuration and
 ## this function inserts a default-value guard.
 ##
-function _gitmaster() {
+function _conf__gitmaster() {
   local default_gitmaster=https://github.com
   echo "${GITMASTER:-$default_gitmaster}"
 }
@@ -82,11 +82,13 @@ function _conf__pkg_ver() {
   local name="$1"; shift;
   local level="$1"; shift;
 
-  local varname='$_'"$name"'_REQUIRED_'"$level"
-  local result="$( eval "$varname" )"
+  local varname='_'"$name"'_REQUIRED_'"$level"
+  local result="$( printenv "$varname" )"
 
-  if [ -z "$result" ]
+  if [ -n "$result" ]
   then
+    echo "$result"
+  else
     _err_and_die "$( printf 'No version requirement found for %s @%s (%s)' "$name" "$level" "$varname" )"
   fi
 }
@@ -108,7 +110,7 @@ function _conf__pkg_ver_major_minor() {
 
 ##
 ## Evaluate an expression in the given environment
-function _conf_at() {
+function _conf__at() {
   local env="$1"; shift;
 
   (
@@ -132,8 +134,8 @@ function _conf_at() {
 function _local_mirrors() {
   git clone \
     --mirror \
-    "$( _conf_at deploy _pyenv_git_source )" \
-    "$( _conf_at local _pyenv_git_source )"
+    "$( _conf__at deploy _pyenv_git_source )" \
+    "$( _conf__at local  _pyenv_git_source )"
 }
 
 
@@ -157,9 +159,9 @@ function _local_mirrors() {
 ##
 ## # Example
 ##
-##    _is_installed pyenv
+##    _pkg__is_installed pyenv
 ##
-function _is_installed () {
+function _pkg__is_installed () {
   local pkg="$1"; shift;
 
   "_is_${pkg}_installed"
@@ -175,9 +177,9 @@ function _is_installed () {
 ##
 ## # Example
 ##
-##    _install pyenv
+##    _pkg__install pyenv
 ##
-function _install () {
+function _pkg__install () {
   local pkg="$1"; shift;
 
   "_install_${pkg}"
@@ -191,15 +193,15 @@ function _install () {
 ##
 ## # Example
 ##
-##    _install_unless_installed pyenv
+##    _pkg__install_unless_installed pyenv
 ##
-function _install_unless_installed() {
+function _pkg__install_unless_installed() {
   local pkg="$1"; shift;
 
-  if ! _is_installed "$pkg"
+  if ! _pkg__is_installed "$pkg"
   then
     echo "Installing $pkg ..."
-    _install "$pkg"
+    _pkg__install "$pkg"
   else
     echo "Skipping installing $pkg..."
   fi
@@ -220,11 +222,16 @@ function _install_unless_installed() {
 ##
 ##    _is_verion_at_least $v_maj $v_min 2 1 || _install_pkg $smth
 ##
-function _is_version_at_least() {
+function _ver__is_at_least() {
   local v1j="$1"; shift
   local v1m="$1"; shift
   local v2j="$1"; shift
   local v2m="$1"; shift
+
+  # Fail if some argument not provided
+  [ -z "$v1j" -o -z "$v1m" -o -z "$v2j" -o -z "$v2m" ] &&
+    return 1
+
   [[
       $((v1j)) > $((v2j))
     ||
@@ -233,7 +240,7 @@ function _is_version_at_least() {
       (   $((v1m)) > $((v2m))
         ||
           $((v1m)) == $((v2m)) )
-  ]]
+  ]] || return 1
 }
 
 ##
@@ -243,7 +250,7 @@ function _is_version_at_least() {
 ##
 ##    MAJOR MINOR
 ##
-function _pip_get_version () {
+function _ver__get_pip_version () {
   local pkg="$1"; shift;
 
   pip show "$pkg" |
@@ -260,12 +267,14 @@ function _pip_get_version () {
 
 ##
 ## Directories
+_directories=(
+  "$PYTHON_BUILD_CACHE_PATH"
+  "$PIPENV_CACHE_DIR"
+  "$PIP_CACHE_DIR"
+)
 function _is_directories_installed() { false; } # Omnipotent and fast installation
 function _install_directories() {
-  for f in \
-    "$PYTHON_BUILD_CACHE_PATH" \
-    "$PIPENV_CACHE_DIR" \
-    "$PIP_CACHE_DIR"
+  for f in "${_directories[@]}"
   do
     if [ -n "$f" ]
     then
@@ -279,15 +288,15 @@ function _install_directories() {
 ##
 ## PyEnv ##
 _pyenv_target_dir="$PYENV_ROOT"
-function _pyenv_git_source() { echo "$( _gitmaster )"/pyenv/pyenv.git; }
+function _pyenv_git_source() { echo "$( _conf__gitmaster )"/pyenv/pyenv.git; }
 function _is_pyenv_installed() { [ -d "$_pyenv_target_dir" ]; }
 function _install_pyenv() { git clone "$( _pyenv_git_source )" "$PYENV_ROOT"; }
 
 ##
 ## VEnv
-function _venv_activate() { source "$_VENV_ROOT"/bin/activate; which python; which pip; }
+function _venv_activate() { source "$_VENV_ROOT"/bin/activate && which python && which pip; }
 function _is_venv_installed() { ( _venv_activate 2>&1 1>/dev/null ); }
-function _install_venv() { python -m venv "$_VENV_ROOT"; }
+function _install_venv() { python -m venv "$_VENV_ROOT" && _venv_activate; }
 
 
 ##
@@ -297,13 +306,28 @@ function _install_python() { pyenv install; }
 
 ##
 ## Pip
-function _is_pip_installed() { _is_version_at_least $( _pip_get_version pip ) $( _conf__pkg_ver_major_minor 'PIP' ); }
+function _is_pip_installed() { _ver__is_at_least $( _ver__get_pip_version pip ) $( _conf__pkg_ver_major_minor 'PIP' ); }
 function _install_pip() { env PIP_UPGRADE=true pip install pip; }
 
 ##
 ## Pipenv
-function _is_pipenv_installed() { _is_version_at_least $( _pip_get_version pipenv ) $( _conf__pkg_ver_major_minor 'PIPENV' ); }
+function _is_pipenv_installed() { _ver__is_at_least $( _ver__get_pip_version pipenv ) $( _conf__pkg_ver_major_minor 'PIPENV' ); }
 function _install_pipenv() { pip install pipenv; }
+
+##
+## Env Diagnostics
+function _is_env_diagnostics_installed() { false; } # Never; keep diagnosing
+function _install_env_diagnostics() {
+  for c in python pip pipenv
+  do
+    which "$c"
+  done
+}
+
+##
+## Pipenv install
+function _is_pipenv_install_installed() { false; } # Let Pipenv figure this out
+function _install_pipenv_install() { pipenv install --skip-lock; }
 
 ##
 ## PsycoPG
@@ -348,9 +372,9 @@ function _configure() {
   local env="$1"; shift
 
   {
-    _load_env '_common' &&
-    _load_env "$env" &&
-    export _CURRENT_ENV="$env"
+    _conf__load '_common' &&
+    _conf__load "$env" &&
+    export _CONF__ENV="$env"
   } ||
     _err_and_die "$( printf 'No such environemnt: %s' "$env" )"
 }
@@ -361,6 +385,6 @@ function _configure() {
 function _install_pkg() {
   local pkg="$1"; shift
 
-  _install_unless_installed "$pkg" ||
+  _pkg__install_unless_installed "$pkg" ||
     _err_and_die "$( printf 'Failed during "installation"-unless-installed of %s' "$pkg" )"
 }

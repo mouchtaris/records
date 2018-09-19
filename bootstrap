@@ -62,6 +62,8 @@ pkgs=(
   venv
   pip
   pipenv
+  env_diagnostics
+  pipenv_install
 )
 #   python \
 #   psycopg \
