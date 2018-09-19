@@ -4,10 +4,8 @@
 function _configure() {
   local env="$1"; shift
 
-  {
-    _conf__load '_common' &&
-    _conf__load "$env" &&
-    export _CONF__ENV="$env"
-  } ||
-    _err_and_die "$( printf 'No such environemnt: %s' "$env" )"
+  _conf__configure "$env" || {
+    local msg="$( printf 'No such environemnt: %s' "$env" )"
+    _err_and_die "$msg"
+  }
 }
