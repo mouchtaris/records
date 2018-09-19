@@ -33,12 +33,19 @@ relative_source__push libbootstrap
     relative_source get_pip_version.bash
   relative_source__pop
   ###
+  ### ## Venv abstraction
+  ###
+  relative_source__push venv
+    relative_source activate.bash
+  relative_source__pop
+  ###
   ### ## Specific Package Installers ##
   ###
   relative_source__push pkgs
     relative_source directories.bash
     relative_source pyenv.bash
     relative_source venv.bash
+    relative_source venv_activate.bash
     relative_source python.bash
     relative_source pip.bash
     relative_source pipenv.bash

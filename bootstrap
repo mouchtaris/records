@@ -67,6 +67,7 @@ pkgs=(
   directories
   pyenv
   venv
+  venv_activate
   pip
   pipenv
   env_diagnostics
