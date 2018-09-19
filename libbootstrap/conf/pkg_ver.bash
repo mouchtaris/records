@@ -1,5 +1,5 @@
-
 ##
+## Get a version requirement for a package
 ## from configuration.
 ##
 ## Version is described by a package name
