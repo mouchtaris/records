@@ -10,46 +10,22 @@ source "$PROJECT_DIR/libbootstrap/relative_source.bash"
 relative_source libbootstrap.bash
 
 ###
-### ## Argument Check
-###
-
-#
-# Check for correct number of arguments
-#
-if [[ $(($#)) < 1 ]]
-then
-  _err_and_die "$( printf 'Syntax:\n  %s ENV\n\n  ENV:\n    One of the environments in %s' "$0" "$_envs_dir" )"
-fi
-
-#
-# Extract ENV arg
-#
-env=$1; shift;
-if [ -z "$env" ]
-then
-  _err_and_die 'ENV (argv[0]) cannot be empty'
-fi
-
-###
 ### ## Configuration
 ###
 
 #
 # Configure according to ENV
 #
-_configure "$env"
+_configure "$( cat .env )"
 
 ###
 ### ## Subcommand dispatch
 ###
-
 #
 # If a subcommand is given, evaluate
 #
 if [ -n "$1" ]
 then
-  # Extra arguments given.
-  # Dispatch to command:
   comm=_"$1"; shift;
   eval $comm ${@}
   exit $?
@@ -58,7 +34,6 @@ fi
 ###
 ### ## Installations
 ###
-
 #
 # If no subcommand is given, install the following packages
 # in the following order
@@ -73,15 +48,14 @@ pkgs=(
   env_diagnostics
   pipenv_install
 )
-#   python \
-#   psycopg \
-#   airflow
 for pkg in "${pkgs[@]}"
 do
-  _install_pkg "$pkg" || _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
+  _install_pkg "$pkg" ||
+    _err_and_die "$( printf 'Failed while installing unless installed: %s' "$pkg" )"
 done &&
-exit 0 ||
-exit 1
+  exit 0 ||
+  exit 1
+
 
 sudo mkdir -p /var/postgresql &&
 sudo chmod 777 /var/postgresql &&
