@@ -28,7 +28,7 @@ relative_source::pop
 #
 if [ -n "$1" ]
 then
-  comm=_"$1"; shift;
+  comm="$1"; shift;
   eval $comm ${@}
   exit $?
 fi
