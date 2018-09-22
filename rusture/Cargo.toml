@@ -2,6 +2,7 @@
 name = "rusture"
 version = "0.1.0"
 authors = ["Nikos Mouchtaris <nikos.mouchtaris@redtulipsystems.com>"]
+# edition = '2018'
 
 [dependencies]
 regex = "1"
