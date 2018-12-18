@@ -3,6 +3,7 @@ package mse2
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import mse2.Main.{GrandType, TokenType}
 
 import scala.collection.immutable._
 import scala.concurrent.{Await, Future}
@@ -10,14 +11,13 @@ import scala.concurrent.duration.Duration
 
 object Main {
 
-  trait List extends Any
-  final case class Cons[A, B](head: A, tail: B) extends List
-  final type ::[A, B <: List] = A Cons B
+  trait List extends AnyRef {
+    def ::[B <: AnyRef](other: B): other.type :: List.this.type = Cons[other.type, List.this.type](other, this)
+  }
+  final case class Cons[+A <: AnyRef, +B <: List](head: A, tail: B) extends List
+  final type ::[+A <: AnyRef, +B <: List] = A Cons B
   final case object Nil extends List
   final type Nil = Nil.type
-  final implicit class ListOps[A <: List](val self: A) extends AnyVal {
-    def ::[B](other: B): B :: A = Cons(other, self)
-  }
 
   trait Value {
     trait Instance
@@ -35,36 +35,27 @@ object Main {
       Instance(mag(args))
   }
 
-  val Email = Scalar[String]()
-  val Password = Scalar[String]()
-  val email = Email("bob@sponge.com")
-  val pass = Password("12121212")
-  val an_email_please = (email: Email.Instance) ⇒
-    email
-  an_email_please(email)
-//  trait Value {
-//    type Instance
-//    type ArgsMagnet[T]
-//    def apply[T: ArgsMagnet](args: Args)
-//  }
-//
-//  final case class Scalar[T]() extends Value
-//  final case class ScalarInstance[T](v: T)
-//  final case class Enum() extends Value
-//  final case class EnumCase[E <: Enum](enum: E) extends Value
-//  final case class EnumInstance[E <: Enum](c: EnumCase[E])
-//
-//  val Email = Scalar[String]()
-//  val Password = Scalar[String]()
-//  val TokenType = Enum()
-//  val TokenTypeBearer = EnumCase(TokenType)
-//  val ReqToken = Email :: Password :: TokenType :: Nil
-//  val GrandType = Enum()
-//  val GrandTypePassword = EnumCase(GrandType)
-//  val ExpiresIn = Scalar[Long]()
-//  val CreatedAt = Scalar[Long]()
-//  val ResToken = GrandType :: Password :: ExpiresIn :: CreatedAt :: Nil
-//
+  final case class Struct[L <: List](elems: L) extends Value {
+    final case class Instance(v: L) extends super[Value].Instance
+    override type ArgsMagnet[A] = A <:< L
+    override def apply[A: ArgsMagnet](args: A): Instance =
+      Instance(args)
+  }
+
+  val Email: Scalar[String] = Scalar[String]()
+  val Password: Scalar[String] = Scalar[String]()
+  val TokenType: Scalar[Mse.TokenType] = Scalar[Mse.TokenType]()
+  val TokenTypeBearer: TokenType.Instance = TokenType(Mse.TokenType.Bearer)
+  val GrandType: Scalar[Mse.GrandType] = Scalar[Mse.GrandType]()
+  val GrandTypePassword: GrandType.Instance = GrandType(Mse.GrandType.Password)
+  val ExpiresIn: Scalar[Long] = Scalar[Long]()
+  val CreatedAt: Scalar[Long] = Scalar[Long]()
+  val hm0: Nil.type = Nil
+  val hm1: Nil = Nil
+  val hm2 = Email :: Nil
+  val hm3: Email.type :: Nil = hm2
+//  val ResToken: Main.GrandType.type :: Main.Password.type :: Main.ExpiresIn.type :: Main.CreatedAt.type :: Main.Nil.type = GrandType :: Password :: ExpiresIn :: CreatedAt :: Nil
+
 //  trait Make[T] extends Any {
 //    type In
 //    type Instance
