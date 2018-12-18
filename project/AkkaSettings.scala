@@ -4,7 +4,7 @@ import
 
 object AkkaSettings {
 
-  val AkkaVersion = "2.5.14"
-  val AkkaHttpVersion = "10.0.11"
+  val AkkaVersion = "2.5.19"
+  val AkkaHttpVersion = "10.1.5"
 
 }

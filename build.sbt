@@ -20,6 +20,8 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
     JRubySettings.settings ++
     SlickSettings.settings ++
     Slf4jSettings.settings ++
+    ArgonaughtSetting.settings ++
+    CirceSettings.settings ++
     Seq.empty
   )
 lazy val raptureJVM = rapture.jvm

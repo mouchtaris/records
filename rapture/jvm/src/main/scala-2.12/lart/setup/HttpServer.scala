@@ -1,7 +1,7 @@
 package lart
 package setup
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -104,7 +104,7 @@ class HttpServer(
         }
       }
 
-  def start(): Future[Unit] = {
+  def start(): Future[Done] = {
     val http = Http()
     val handler = makeLoggingMiddleware.via(makeHandlerFlow(http))
     http

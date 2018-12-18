@@ -1,13 +1,10 @@
 package lart
 
-import org.slf4j.LoggerFactory.getLogger
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 object Main {
 
+  /** Configuration */
   implicit lazy val config = hm.config()
+
   object db {
     lazy val conf = new ConfDeco(com.typesafe.config.ConfigFactory.defaultApplication)
     final implicit class ConfDeco(val self: com.typesafe.config.Config) extends AnyVal {
