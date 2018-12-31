@@ -7,7 +7,6 @@ class Scene(
   config: hm.config.Config
 ) {
 
-  implicit val configContext: ConfigContext = new ConfigContext
   implicit val akkaContext: AkkaContext = new AkkaContext
   implicit val loggingContext: LoggingContext = new LoggingContext
 

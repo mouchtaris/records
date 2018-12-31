@@ -2,11 +2,12 @@ package lart.setup
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
+import hm.config.Config
 
 final class AkkaContext(
   implicit
-  config: ConfigContext,
+  config: Config,
 ) {
-  implicit val actorSystem: ActorSystem = ActorSystem(config.config.akkaActors.systemName)
-  implicit val materializer: Materializer = ActorMaterializer()(actorSystem)
+  implicit val actorSystem: ActorSystem = ActorSystem(config.akkaActors.systemName)
+  implicit val materializer: Materializer = ActorMaterializer()
 }

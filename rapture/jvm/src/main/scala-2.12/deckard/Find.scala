@@ -1,75 +1,100 @@
 package deckard
 
-import java.io.{ File ⇒ JFile }
-import java.nio.file.{FileSystem, FileSystems, Path, Paths}
+import java.nio.file.{FileSystems}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
-import scala.collection.JavaConverters._
 
-import akka.stream.scaladsl.{ Source, Flow, Sink, FileIO }
+import panda.Magnet
 
 object Find {
 
-  final implicit class File(val value: JFile) extends AnyVal
-  final implicit class Directory(val value: JFile) extends AnyVal {
-    def files: Stream[JFile] =
+  type JFile = java.io.File
+  type JPath = java.nio.file.Path
+
+  implicit val jpathToJfileMagnetization: JPath Magnet JFile =
+    _.toFile
+
+  final class Path(val self: Traversable[String]) extends AnyVal {
+    def clean = new Path(Seq.empty)
+  }
+
+  trait Pathname extends Any {
+    def value: JFile
+
+    def children: Stream[Pathname] =
       Option(value.listFiles)
         .map(_.toStream)
         .getOrElse(Stream.empty)
         .map(Option(_))
         .collect {
-          case Some(file) => file
+          case Some(file) if file.isFile => File(file)
+          case Some(directory) if directory.isDirectory ⇒ Directory(directory)
         }
-        .flatMap(allFiles)
+
+    final def closure: Stream[Pathname] =
+      this #:: (children flatMap (_.closure))
+
+    def isFile: Boolean = false
+    def isDirectory: Boolean = false
+
+    final def path: Stream[String] =
+      value.toURI.getPath.split("/").toStream
+  }
+
+  final implicit class File(val value: JFile) extends AnyVal with Pathname {
+    override def isFile: Boolean = true
+    override def toString: String = s"File($value)"
+  }
+
+  final implicit class Directory(val value: JFile) extends AnyVal with Pathname {
+    override def isDirectory: Boolean = true
+    override def toString: String = s"Directory($value)"
+  }
+
+  final object Pathname {
+
+    def apply[T: Magnet.ized[Try[JFile]]#from](file: T): Try[Pathname] =
+      Magnet[Try[JFile]](file) flatMap {
+        case f if f.isFile ⇒
+          Success(File(f))
+        case d if d.isDirectory ⇒
+          Success(Directory(d))
+        case f ⇒
+          Failure(new Exception(s"Unknown file type: $f"))
+      }
 
   }
 
-  def allFilesInDirectory(dir: JFile): Stream[JFile] =
-    Option(dir.listFiles)
-      .map(_.toStream)
-      .getOrElse(Stream.empty)
-      .map(Option(_))
-      .collect {
-        case Some(file) => file
-      }
-      .flatMap(allFiles)
-
   final object File {
-    def unapply(file: JFile): Option[File] =
-      if (file.isFile)
-        Some(File(file))
-    else
-        None
+    def unapply[T: Magnet.ized[JFile]#from](file: T): Option[File] =
+      Magnet[JFile](file) match {
+        case f if f.isFile ⇒
+          Some(File(f))
+        case _ ⇒
+          None
+      }
   }
 
   final object Directory {
-    def unapply(file: JFile): Option[Directory] =
-      if (file.isDirectory)
-        Some(Directory(file))
-    else
-        None
+    def unapply[T: Magnet.ized[JFile]#from](file: T): Option[Directory] =
+      Magnet[JFile](file) match {
+        case f if f.isDirectory ⇒
+          Some(Directory(f))
+        case _ ⇒
+          None
+      }
   }
 
-  def allFiles(file: JFile): Stream[JFile] = {
-    file match {
-      case File(_) =>
-        Stream(file)
-      case Directory(dir) =>
-        dir.files
-    }
-  }
+  implicit def pathname(path: JPath): Try[Pathname] = pathname(path.toFile)
+  implicit def pathname(file: JFile): Try[Pathname] = Pathname(file)
 
-  implicit val pathToFile: As.Evidence[Path, File] =
-    _.toFile
-
-  final class RootsMagnet(val roots: Iterable[File]) extends AnyVal
+  final class RootsMagnet(val roots: Stream[Pathname]) extends AnyVal
 
   object RootsMagnet {
-    import As.Decoration
 
-    implicit def fromToFileIterable[T](roots: Iterable[T])(implicit ev: As.Evidence[T, File]): RootsMagnet =
-      new RootsMagnet(roots map (_.as[File]))
+    implicit def fromToFileIterable[T](roots: Iterable[T])(implicit ev: T ⇒ Try[Pathname]): RootsMagnet =
+      new RootsMagnet(roots.toStream map ev collect { case Success(path) ⇒ path })
 
     implicit def default: RootsMagnet =
       FileSystems.getDefault.getRootDirectories.asScala

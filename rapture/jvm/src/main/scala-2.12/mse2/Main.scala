@@ -53,7 +53,7 @@ object Main {
   val hm0: Nil.type = Nil
   val hm1: Nil = Nil
   val hm2 = Email :: Nil
-  val hm3: Email.type :: Nil = hm2
+  //val hm3: Email.type :: Nil = hm2
 //  val ResToken: Main.GrandType.type :: Main.Password.type :: Main.ExpiresIn.type :: Main.CreatedAt.type :: Main.Nil.type = GrandType :: Password :: ExpiresIn :: CreatedAt :: Nil
 
 //  trait Make[T] extends Any {

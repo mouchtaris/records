@@ -22,6 +22,7 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
     Slf4jSettings.settings ++
     ArgonaughtSetting.settings ++
     CirceSettings.settings ++
+    RingoJsSettings.settings ++
     Seq.empty
   )
 lazy val raptureJVM = rapture.jvm

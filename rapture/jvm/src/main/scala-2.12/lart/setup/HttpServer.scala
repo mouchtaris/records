@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
+import hm.config.Config
 import hm.{TypeInfo, config}
 import lart.http.routes.{RouteCalled, Unhandled}
 
@@ -23,7 +24,7 @@ case object HttpServer
 
 class HttpServer(
   implicit
-  config: ConfigContext,
+  config: Config,
   akka: AkkaContext,
   logs: LoggingContext,
 ) {
@@ -33,11 +34,12 @@ class HttpServer(
   private[this] val logger: Logging.Logger = logs.factory[HttpServer]
   private[this] val finishPromise: Promise[Unit] = Promise()
   private[this] val finish: Future[Unit] = finishPromise.future
-  private[this] val conf = config.config.server
+  val conf: hm.config.Server = config.server
+  val http = Http()
 
   logger.info("Good morning")
 
-  private[this] def makeToPathForwarder(http: HttpExt): HttpRequest ⇒ Future[HttpResponse] =
+  private[this] val toPathForwarder: HttpRequest ⇒ Future[HttpResponse] =
     req ⇒ {
       val vec1f = req.entity.dataBytes.runWith(Sink.collection[ByteString, Vector[ByteString]])
       val vec2f = req.entity.dataBytes.runWith(Sink.collection[ByteString, Vector[ByteString]])
@@ -54,20 +56,20 @@ class HttpServer(
         .andThen { case res ⇒ logger.info("result came in: {}", res) }(Now)
     }
 
-  private[this] def makeRouteCalledRoute: Route =
+  private[this] val routeCalledRoute: Route =
     RouteCalled(
       pathPrefix = completePrefix,
       completionPromise = finishPromise,
       logger = logs.factory("<complete future>")
     )
 
-  private[this] def makeUnhandledRoute(http: HttpExt): Route =
+  private[this] val unhandledRoute: Route =
     Unhandled(
-      handle = makeToPathForwarder(http),
+      handle = toPathForwarder,
       logger = logs.factory("<unhandled>")
     )
 
-  private[this] def makeRejectionHandler: RejectionHandler =
+  private[this] val rejectionHandler: RejectionHandler =
     RejectionHandler.newBuilder
       .handle {
         case rejection ⇒
@@ -76,40 +78,40 @@ class HttpServer(
       }
       .result()
 
-  private[this] def makeExceptionHandler: ExceptionHandler =
+  private[this] val exceptionHandler: ExceptionHandler =
     ExceptionHandler {
       case ex ⇒
         logger.error("Exception: {}", ex)
         complete(StatusCodes.InternalServerError)
     }
 
-  private[this] def makeLoggingMiddleware: Flow[HttpRequest, HttpRequest, NotUsed] =
+  private[this] val loggingMiddleware: Flow[HttpRequest, HttpRequest, NotUsed] =
     Flow[HttpRequest] alsoTo {
        Sink foreach {
          logger.info("Handling request: {}", _)
        }
     }
 
-  private[this] def makeRequestHandlingContext: Directive0 =
-    handleExceptions(makeExceptionHandler) & handleRejections(makeRejectionHandler) & logRequest("A REQUEST")
+  private[this] val requestHandlingContext: Directive0 =
+    handleExceptions(exceptionHandler) &
+      handleRejections(rejectionHandler) &
+      logRequest("A REQUEST")
 
-  private[this] def makeHandlerFlow(http: HttpExt): Flow[HttpRequest, HttpResponse, NotUsed] =
-    makeLoggingMiddleware
+  val handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
+    loggingMiddleware
       .via {
-        makeRequestHandlingContext {
+        requestHandlingContext {
           concat(
-            makeUnhandledRoute(http),
-            makeRouteCalledRoute
+            unhandledRoute,
+            routeCalledRoute
           )
         }
       }
 
   def start(): Future[Done] = {
-    val http = Http()
-    val handler = makeLoggingMiddleware.via(makeHandlerFlow(http))
     http
       .bindAndHandle(
-        handler = handler,
+        handler = handlerFlow,
         interface = conf.host,
         port = conf.port,
       )
