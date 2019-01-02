@@ -1,7 +1,8 @@
 package lr
+import scala.collection.IterableView
+import scala.collection.immutable._
 
 object Main {
-
   final case object Cursor {
     override def toString: String = "•"
   }
@@ -16,89 +17,74 @@ object Main {
   }
   sealed trait NonTerminal extends Any with Symbol
   object NonTerminal {
+    final case object `S'` extends NonTerminal
     final case object S extends NonTerminal
     final case object E extends NonTerminal
     final case object START extends NonTerminal
   }
 
-  final implicit class Expansion(val self: Vector[Vector[Symbol]]) extends AnyVal {
-    override def toString: String =
-      self
-        .map { _ mkString " " }
-        .mkString("\n  | ")
+  final type Production = (Symbol, Vector[Symbol])
+  final implicit class ProductionDecoration(val self: Production) extends AnyVal {
+    def symbol: Symbol = self._1
+    def expansion: Vector[Symbol] = self._2
+    override def toString: String = self match { case (s, p) ⇒ s"$s → ${p mkString " "}" }
   }
-
-  final implicit class Production(val self: (Symbol, Expansion)) extends AnyVal {
-    override def toString: String = s"${self._1} → ${self._2}"
-  }
-  final type SimpleProduction = (Symbol, SimpleExpansion)
   object Productions {
-    import NonTerminal._
+
     import Terminal._
-    def apply(): Set[Production] = Set(
-      S → Exp(E),
-      E → (Exp(E, x, E) | Exp(z)),
+    import NonTerminal._
+
+    val P = Vector
+
+    val all: Vector[Production] = P(
+      `S'` → P(S),
+      S → P(E),
+      E → P(E, x, E),
+      E → P(z),
     )
+    val decorated: Vector[ProductionDecoration] = all map (new ProductionDecoration(_))
 
-    def symProductions(symbol: Symbol): Vector[SimpleProduction] =
-      Productions()
-        .toVector
-        .map(_.self)
-        .filter {
-          case (`symbol`, _) ⇒ true
-          case _ ⇒ false
-        }
-        .flatMap {
-          case (sym, AlternativeExpansions(exps)) ⇒
-            exps.map(sym → _)
-          case (sym, exp @ SimpleExpansion(_)) ⇒
-            Vector(sym → exp)
-        }
+    val forSymbol: Symbol ⇒ Vector[Production] = sym ⇒ all filter { _._1 == sym }
   }
 
-
-  final case class ItemExpansion(els: Vector[ItemElement]) {
-    override def toString: String = els.mkString(" ")
+  final implicit class BoolDeco(val self: Boolean) extends AnyVal {
+    def ifTrue[T](obj: ⇒ T): Option[T] = if (self) Some(obj) else None
   }
-  final implicit class Item(val self: (Symbol, ItemExpansion)) extends AnyVal {
-    override def toString: String = s"${self._1} → ${self._2}"
-  }
-  object Item {
 
-    final implicit class SimpleExpansionExtension(val self: SimpleExpansion) extends AnyVal {
-      def toItem = ItemExpansion(self.symbols)
+  final case class Item(prod: Production, cursorIndex: Int) {
+    def closing: Option[Symbol] =
+      (cursorIndex < prod._2.length)
+        .ifTrue { prod._2(cursorIndex) }
+        .collect { case nonTerminal: NonTerminal ⇒ nonTerminal }
+    def preCursor: Vector[Symbol] = prod.expansion.slice(0, cursorIndex)
+    def postCursor: Vector[Symbol] = prod.expansion.slice(cursorIndex, prod.expansion.size)
+    override def toString: String = s"${prod.symbol} → ${preCursor mkString " "} $Cursor ${postCursor mkString " "}"
+  }
+  object Items {
+
+    final implicit class ProductionDecoration(val self: Production) extends AnyVal {
+      def initialItem: Item = Item(self, 0)
     }
 
-    def initial(p: SimpleProduction): Item =
-      p._1 → ItemExpansion(Cursor +: p._2.toItem.els)
+    val itemClosure: Item ⇒ Set[Item] =
+      item ⇒
+        item.closing
+          .map(Productions.forSymbol).getOrElse(Vector.empty)
+          .map(_.initialItem)
+          .foldLeft(Set(item))(_ + _)
 
-    def initials(sym: Symbol): Vector[Item] =
-      Productions
-        .symProductions(sym)
-        .map(initial)
+    val closure: Set[Item] ⇒ Set[Item] =
+      set ⇒ {
+        val set2 = set flatMap itemClosure
+        (set == set2)
+          .ifTrue(set)
+          .getOrElse(closure(set2))
+      }
 
-    def closure(item: Item): Set[Item] = {
-      import scala.collection.immutable._
-      val exp: Vector[ItemElement] = item.self._2.els
-      val clos: Set[Item] = Set(item)
-      val idx: Int = exp.indexOf(Cursor: ItemElement)
-      if (idx == -1 || idx >= exp.length - 1)
-        return clos
-
-      val el: ItemElement = exp(idx)
-      if (!el.isInstanceOf[NonTerminal])
-        return  clos
-      if (!el.isInstanceOf[Symbol])
-        throw new Exception("Two cursors?")
-      val sym: Symbol = el.asInstanceOf[Symbol]
-
-      val initialItems: Vector[Item] = initials(sym)
-      val clos2 = initialItems.foldLeft(clos)(_ + _)
-      if (clos.size == clos2.size)
-        return clos
-
-
-    }
+    val symbolClosure: Symbol ⇒ Set[Item] =
+      Productions.forSymbol andThen (_.map(_.initialItem).toSet.flatMap(itemClosure andThen closure))
+    val productionClosure: Production ⇒ Set[Item] =
+      ((_: Production).symbol) andThen symbolClosure
   }
   //
   // Sample grammar
@@ -108,8 +94,8 @@ object Main {
   //        | z
   //
   def main(args: Array[String]): Unit = {
-    println(Productions() mkString "\n")
-    println(Item.initials(NonTerminal.E) mkString "\n")
+    println(Productions.decorated mkString "\n")
+    println(Items.symbolClosure(NonTerminal.`S'`).mkString("\n"))
   }
 
 }
