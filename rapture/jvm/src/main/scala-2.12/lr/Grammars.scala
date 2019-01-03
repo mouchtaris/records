@@ -8,6 +8,8 @@ object Grammars {
   import symbols.NonTerminal._
 
   val ExampleProductions: ListSet[Production] = Grammar.makeProductions(
+    `S'` → Seq(S),
+
     S → Seq(E),
     E → Seq(E, x, E),
     E → Seq(z),

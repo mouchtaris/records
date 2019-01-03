@@ -23,10 +23,8 @@ trait GrammarBuilding extends Any {
 
   implicit def fromProductions(prods: Iterable[Production]): Grammar = {
     val prodsSet: ListSet[Production] = prods.to
-    Grammar(
-      collectFromProductions[symbols.Terminal](prodsSet),
-      collectFromProductions[symbols.NonTerminal](prodsSet),
-      prodsSet,
-    )
+    val terminals: ListSet[symbols.Terminal] = collectFromProductions[symbols.Terminal](prodsSet)
+    val nonTerminals: ListSet[symbols.NonTerminal] = collectFromProductions[symbols.NonTerminal](prodsSet)
+    Grammar(terminals, nonTerminals, prodsSet, nonTerminals.head)
   }
 }

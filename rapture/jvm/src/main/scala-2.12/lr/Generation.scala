@@ -20,13 +20,16 @@ final case class Generation(
     //    the cursor in the item
     //
     val itemExpansion: Item ⇒ ListSet[Item] =
-    // Get (optionally) the symbol after the cursor -- say S
-    _.cursorOpt // Option[Symbol] =>
-      // Get all S-Productions from the grammar.
-      // If the cursor is looking at the end (None), get an empty set
-      .map(grammar.apply).getOrElse(ListSet.empty) // ListSet[Production] =>
-      // Augment with the item itself
-      .map(Item.initial) // ListSet[Item]
+      item ⇒
+        // Get (optionally) the symbol after the cursor -- say S
+        item.cursorOpt // Option[Symbol] =>
+          // Get all S-Productions from the grammar.
+          // If the cursor is looking at the end (None), get an empty set
+          .map(grammar.apply).getOrElse(ListSet.empty) // ListSet[Production] =>
+          // Get initial items of productions
+          .map(Item.initial) // ListSet[Item]
+          // Preserve the initial item. Make first for clarity.
+          .foldLeft(ListSet(item))(_ + _)
 
 
     //
@@ -100,5 +103,11 @@ final case class Generation(
     .map(_.cursorOpt)
     .collect { case Some(symbol) ⇒ symbol }
   )
+
+  //
+  // Make an initial state from the given symbol
+  //
+  val state0: symbols.NonTerminal ⇒ State =
+    (grammar(_)) andThen (_.head) andThen Item.initial andThen (ListSet(_)) andThen (State(0, _)) andThen close
 
 }

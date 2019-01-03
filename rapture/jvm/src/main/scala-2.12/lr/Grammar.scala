@@ -1,12 +1,12 @@
 package lr
 
 import scala.collection.immutable._
-import scala.reflect.ClassTag
 
 final case class Grammar(
   N: ListSet[symbols.Terminal],
   Σ: ListSet[symbols.NonTerminal],
   P: ListSet[Production],
+  start: symbols.NonTerminal,
 ) {
 
   override def toString: String =
