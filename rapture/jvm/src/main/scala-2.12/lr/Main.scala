@@ -3,88 +3,58 @@ import scala.collection.IterableView
 import scala.collection.immutable._
 
 object Main {
-  final case object Cursor {
-    override def toString: String = "•"
-  }
 
-  sealed trait Symbol extends Any
-  sealed trait Terminal extends Any with Symbol
-  object Terminal {
-    final case object x extends Terminal
-    final case object z extends Terminal
-    final case object e extends Terminal
-    final case object EOS extends Terminal
-  }
-  sealed trait NonTerminal extends Any with Symbol
-  object NonTerminal {
-    final case object `S'` extends NonTerminal
-    final case object S extends NonTerminal
-    final case object E extends NonTerminal
-    final case object START extends NonTerminal
-  }
+//    val initials: symbols ⇒ ListSet[Item] = (Productions.apply _).andThen(_.map(initial))
+//    val symbolClosure: symbols ⇒ ListSet[Item] = initials andThen closure
+//    val itemClosure: Item ⇒ ListSet[Item] = Item.lens.symbol andThen symbolClosure
 
-  final type Production = (Symbol, Vector[Symbol])
-  final implicit class ProductionDecoration(val self: Production) extends AnyVal {
-    def symbol: Symbol = self._1
-    def expansion: Vector[Symbol] = self._2
-    override def toString: String = self match { case (s, p) ⇒ s"$s → ${p mkString " "}" }
-  }
-  object Productions {
-
-    import Terminal._
-    import NonTerminal._
-
-    val P = Vector
-
-    val all: Vector[Production] = P(
-      `S'` → P(S),
-      S → P(E),
-      E → P(E, x, E),
-      E → P(z),
-    )
-    val decorated: Vector[ProductionDecoration] = all map (new ProductionDecoration(_))
-
-    val forSymbol: Symbol ⇒ Vector[Production] = sym ⇒ all filter { _._1 == sym }
-  }
-
-  final implicit class BoolDeco(val self: Boolean) extends AnyVal {
-    def ifTrue[T](obj: ⇒ T): Option[T] = if (self) Some(obj) else None
-  }
-
-  final case class Item(prod: Production, cursorIndex: Int) {
-    def closing: Option[Symbol] =
-      (cursorIndex < prod._2.length)
-        .ifTrue { prod._2(cursorIndex) }
-        .collect { case nonTerminal: NonTerminal ⇒ nonTerminal }
-    def preCursor: Vector[Symbol] = prod.expansion.slice(0, cursorIndex)
-    def postCursor: Vector[Symbol] = prod.expansion.slice(cursorIndex, prod.expansion.size)
-    override def toString: String = s"${prod.symbol} → ${preCursor mkString " "} $Cursor ${postCursor mkString " "}"
-  }
-  object Items {
-
-    final implicit class ProductionDecoration(val self: Production) extends AnyVal {
-      def initialItem: Item = Item(self, 0)
-    }
-
-    val itemClosure: Item ⇒ Set[Item] =
-      item ⇒
-        item.closing
-          .map(Productions.forSymbol).getOrElse(Vector.empty)
-          .map(_.initialItem)
-          .foldLeft(Set(item))(_ + _)
-
-    val closure: Set[Item] ⇒ Set[Item] =
-      set ⇒ {
-        val set2 = set flatMap itemClosure
-        (set == set2)
-          .ifTrue(set)
-          .getOrElse(closure(set2))
-      }
-
-    val symbolClosure: Symbol ⇒ Set[Item] =
-      Productions.forSymbol andThen (_.map(_.initialItem).toSet.flatMap(itemClosure andThen closure))
-    val productionClosure: Production ⇒ Set[Item] =
-      ((_: Production).symbol) andThen symbolClosure
+//  object States {
+//    val i0 = State(0, Items.symbolClosure(NonTerminal.`S'`))
+//  }
+//
+//  trait Action extends Any
+//  final case class GoTo(table: ListMap[(State, symbols), State])
+//  final case class Parsing(
+//    states: TreeSet[State],
+//    unprocessedStates: ListSet[State],
+//    goto: Vector[ListMap[symbols, State]],
+//    action: Vector[ListMap[symbols, Action]],
+//  )
+//  object Parsing {
+//    implicit val stateOrdering: Ordering[State] = Ordering.by(State.lens.items)
+//    def apply() = Parsing(states = TreeSet.empty, unprocessedStates = ListSet(States.i0), goto = Vector.empty, action = Vector.empty)
+//    def generate(parsing: Parsing): Parsing = {
+//      parsing.unprocessedStates.foldLeft(parsing) { (parsing, state) ⇒
+//        val curses: ListSet[symbols] = States.cursors(state)
+//        ???
+//      }
+//    }
+//    def generate(): Parsing = {
+//      val zero = Parsing()
+//      generate(zero)
+//    }
+//    val next: Parsing ⇒ Parsing =
+//      parsing ⇒ {
+//        val state = parsing.states.last
+//        val curses: ListSet[symbols] = States.cursors(state)
+//        val (_, newStates) = curses.foldLeft((parsing.nextId, Vector.empty[State])) {
+//          case ((id, states), curs) ⇒
+//            import States.StateDecoration
+//            val newState: State = state.selectLookingAs(id, curs).advance.closed
+//            (id + 1, states :+ newState)
+//        }
+//        ???
+//      }
+//  }
+//
+  object Kitsch {
+//    import States._
+//    val i1 = States.i0.selectLookingAs(1, NonTerminal.S).advance.closed
+//    val i2 = States.i0.selectLookingAs(2, NonTerminal.E).advance.closed
+//    val i3 = States.i0.selectLookingAs(3, Terminal.z).advance.closed
+//    val i4 = i2.selectLookingAs(4, Terminal.x).advance.closed
+//    val i5 = i4.selectLookingAs(5, NonTerminal.E).advance.closed
+//    val i6 = i5.advance.advance.advance
   }
   //
   // Sample grammar
@@ -94,8 +64,18 @@ object Main {
   //        | z
   //
   def main(args: Array[String]): Unit = {
-    println(Productions.decorated mkString "\n")
-    println(Items.symbolClosure(NonTerminal.`S'`).mkString("\n"))
+    println("Welcome to Parsing Meletalathron")
+    println("== Grammar ==")
+    println(Grammars.Example)
+//    println(Productions.all.mkString("\n"))
+//    println("========= ")
+//    println(States.i0)
+//    println(Kitsch.i1)
+//    println(Kitsch.i2)
+//    println(Kitsch.i3)
+//    println(Kitsch.i4)
+//    println(Kitsch.i5)
+//    println(Kitsch.i6)
   }
 
 }
