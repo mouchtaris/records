@@ -10,9 +10,14 @@ object Main {
     println(Grammars.Example.start)
     println(Grammars.Example)
     println("== States ==")
-    println(g.gstate0)
+    val s0 = g.gstate0
+    println(s0)
     println("==")
-    println(g.next(g.gstate0))
+    val s1 = g next s0
+    println(s1)
+    println("==")
+    val s2 = g next s1
+    println(s2)
   }
 
 }

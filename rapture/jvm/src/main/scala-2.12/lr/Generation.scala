@@ -2,6 +2,7 @@ package lr
 
 import scala.annotation.tailrec
 import scala.collection.immutable._
+import lib.Debuggation
 
 object Generation {
   sealed trait Action
@@ -39,20 +40,31 @@ object Generation {
     gotos: Gotos,
     states: StateSet,
     unprocessedStates: Vector[State],
+    nextId: Int,
   ) {
 
     //
     // Reuse an equiv-state or the one given
     //
-    def stateReuse(s: State): State =
-      states.find(sequiv(s)).getOrElse(s)
+    def stateReuse(s: State): (State, GState) =
+      states.find(sequiv(s))
+        .map((_, this))
+        .getOrElse((
+          s.copy(i = nextId),
+          copy(nextId = nextId + 1),
+        ))
 
-    val i0: State = unprocessedStates.head
-    val nextId: Int = i0.i + 1
+    def i0: State = unprocessedStates.head
+    def processed: GState = copy(
+      states = states + i0,
+      unprocessedStates = unprocessedStates.drop(1)
+    )
 
     override def toString: String = {
-      val states = unprocessedStates.mkString("\n")
-      states
+      val todo = s"TODO: ${unprocessedStates.mkString(", ")}"
+      val sstates = states.mkString("\n")
+      val actionsHeader = actions
+      s"$sstates\n$todo"
     }
   }
 
@@ -63,6 +75,7 @@ object Generation {
         gotos = Vector.empty,
         states = TreeSet.empty,
         unprocessedStates = Vector(state0),
+        nextId = 1,
       )
   }
 }
@@ -143,15 +156,7 @@ final case class Generation(
   // No ID changes.
   //
   def selectLooking(symbol: symbols.Symbol, state: State): State =
-    state copy (items = state.items.filter(_.symbol == symbol))
-
-  //
-  // Finally, also rename states
-  //
-  // ID changes.
-  //
-  def rename(id: Int, state: State): State =
-    state copy (i = id)
+    state copy (items = state.items.filter(_.cursorOpt.exists(_ == symbol)))
 
   //
   // Select all symbols that are being "looked at" by cursors
@@ -186,24 +191,40 @@ final case class Generation(
   //
   def next(gstate: GState): GState = {
     import
-      gstate.{ i0, nextId, stateReuse },
-      Generation.{ Transtyle, Shift, addAction }
+      Generation.{ Transtyle, Actions, Shift, addAction }
 
-    def transit(gstate: GState, trans: (symbols.Symbol, Int)): GState = {
-      val (sym, id) = trans
+    // only close i0 for the iteration of every looked-at symbol
+    val i0 = gstate.i0
+
+    def transit(gstate: GState, sym: symbols.Symbol): GState = {
       def addAction_[T](actions: Transtyle[T], obj: T): Transtyle[T] = addAction(actions, i0.i, sym, obj)
 
-      val i1: State = stateReuse(rename(nextId + id, close(advanceState(selectLooking(sym, i0)))))
-      val nextActions = sym match {
+      val (i1, gstate_): (State, GState) =
+        gstate.stateReuse(
+          close(
+            advanceState(
+              selectLooking(
+                sym.dbLookingAt,
+                i0
+              ).dbSelectedLookingAt
+            ).dbAdvancedStates
+          ).dbClosed
+        )
+      i1.dbReused
+      gstate_.nextId.dbNextId
+      def nextActions: Actions = sym match {
         case _: symbols.Terminal ⇒ addAction_(gstate.actions, Shift())
         case _ ⇒ gstate.actions
       }
-      val nextGotos = addAction_(gstate.gotos, i1)
-      val nextStates = gstate.states + i0
-      val nextUnprocessedStates = gstate.unprocessedStates :+ i1
-      GState(nextActions, nextGotos, nextStates, nextUnprocessedStates)
+      gstate_.copy(
+        actions = nextActions,
+        gotos = addAction_(gstate.gotos, i1),
+        unprocessedStates = gstate.unprocessedStates :+ i1,
+      )
     }
 
-    lookedAt(i0).zipWithIndex.foldLeft(gstate)(transit)
+    lookedAt(i0.dbI0)
+      .dbLookedAt
+      .foldLeft(gstate.processed)(transit)
   }
 }
