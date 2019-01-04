@@ -17,7 +17,7 @@ trait GrammarBuilding extends Any {
 
   private[this] def collectFromProductions[S <: symbols.Symbol : ClassTag](prods: Iterable[Production]): ListSet[S] =
     prods.toVector
-      .map { case Production(symbol, Expansion(expansion)) ⇒ expansion :+ symbol }
+      .map { case Production(symbol, Expansion(expansion)) ⇒ symbol +: expansion }
       .flatMap(collectFromSymbols[S])
       .to
 
