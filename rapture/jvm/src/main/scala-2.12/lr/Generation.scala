@@ -11,7 +11,7 @@ object Generation {
   type SEquiv = State ⇒ State ⇒ Boolean
   type StateSet = TreeSet[State]
   type Actions = Transtyle[Action]
-  type Gotos = Transtyle[State]
+  type Gotos = Transtyle[Int]
 
   type Transtyle[T] = ListMap[Int, ListMap[symbols.Symbol, T]]
   object Transtyle {
@@ -256,7 +256,7 @@ final case class Generation(
       }
       gstate_.copy(
         actions = nextActions,
-        gotos = addAction_(gstate.gotos, i1),
+        gotos = addAction_(gstate.gotos, i1.i),
       )
     }
 
