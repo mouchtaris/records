@@ -10,9 +10,13 @@ object Generation {
 
   type SEquiv = State ⇒ State ⇒ Boolean
   type StateSet = TreeSet[State]
-  type Transtyle[T] = Vector[ListMap[symbols.Symbol, T]]
   type Actions = Transtyle[Action]
   type Gotos = Transtyle[State]
+
+  type Transtyle[T] = ListMap[Int, ListMap[symbols.Symbol, T]]
+  object Transtyle {
+    def empty[T]: Transtyle[T] = ListMap.empty
+  }
 
   implicit val symbolOrdering: Ordering[symbols.Symbol] = Ordering.by(_.toString)
   implicit val expansionOrdering: Ordering[Expansion] = Ordering.by(_.value.toIterable)
@@ -22,14 +26,8 @@ object Generation {
 
   val sequiv: SEquiv = (Ordering[State].equiv _).curried
 
-  def addAction[T](actions: Transtyle[T], n: Int, s: symbols.Symbol, a: T): Transtyle[T] = {
-    if (n > actions.size)
-      throw new Exception("Assertion error: n can be at least 1 more than current n")
-    if (n == actions.size)
-      actions :+ ListMap(s → a)
-    else
-      actions.updated(n, actions(n).updated(s, a))
-  }
+  def addAction[T](actions: Transtyle[T], n: Int, s: symbols.Symbol, a: T): Transtyle[T] =
+    actions.updated(n, actions.getOrElse(n, ListMap.empty).updated(s, a))
 
 
   //
@@ -49,10 +47,14 @@ object Generation {
     def stateReuse(s: State): (State, GState) =
       states.find(sequiv(s))
         .map((_, this))
-        .getOrElse((
-          s.copy(i = nextId),
-          copy(nextId = nextId + 1),
-        ))
+        .getOrElse {
+          val sNew = s.copy(i = nextId)
+          val stateNew = copy(
+            nextId = nextId + 1,
+            unprocessedStates = unprocessedStates :+ sNew
+          )
+          (sNew, stateNew)
+        }
 
     def i0: State = unprocessedStates.head
     def processed: GState = copy(
@@ -71,8 +73,8 @@ object Generation {
   object GState {
     def apply(state0: State): GState =
       GState(
-        actions = Vector.empty,
-        gotos = Vector.empty,
+        actions = Transtyle.empty,
+        gotos = Transtyle.empty,
         states = TreeSet.empty,
         unprocessedStates = Vector(state0),
         nextId = 1,
@@ -219,7 +221,6 @@ final case class Generation(
       gstate_.copy(
         actions = nextActions,
         gotos = addAction_(gstate.gotos, i1),
-        unprocessedStates = gstate.unprocessedStates :+ i1,
       )
     }
 

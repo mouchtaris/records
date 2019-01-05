@@ -18,6 +18,18 @@ object Main {
     println("==")
     val s2 = g next s1
     println(s2)
+    println("==")
+    val s3 = g next s2
+    println(s3)
+    println("==")
+    val s4 = g next s3
+    println(s4)
+    println("==")
+    val s5 = g next s4
+    println(s5)
+    println("==")
+    val s6 = g next s5
+    println(s6)
   }
 
 }
