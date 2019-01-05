@@ -16,6 +16,24 @@ object Generation {
   type Transtyle[T] = ListMap[Int, ListMap[symbols.Symbol, T]]
   object Transtyle {
     def empty[T]: Transtyle[T] = ListMap.empty
+
+    def normalize[T](actions: Transtyle[T]): (Map[Int, symbols.Symbol], Vector[Option[T]]) = {
+      val symbolMap: Map[symbols.Symbol, Int] =
+        actions.values.flatMap(_.keys).zipWithIndex.toMap
+      val symbolTable: Map[Int, symbols.Symbol] = symbolMap.map { case (s, i) ⇒ (i, s) }
+      val symbolsOrdered: Vector[symbols.Symbol] = symbolTable.values.toVector
+      val maxId: Int = actions.keys.foldLeft(0)(Math.max)
+      val numSymbols: Int = symbolMap.size
+      val b = Vector.newBuilder[Option[T]]
+      b.sizeHint(maxId * numSymbols)
+      (0 until maxId) foreach { i ⇒
+        val entryMaybe: Option[ListMap[symbols.Symbol, T]] = actions.get(i)
+        symbolsOrdered foreach { sym ⇒
+          b += entryMaybe.flatMap(_.get(sym))
+        }
+      }
+      (symbolTable, b.result())
+    }
   }
 
   implicit val symbolOrdering: Ordering[symbols.Symbol] = Ordering.by(_.toString)
@@ -64,9 +82,27 @@ object Generation {
 
     override def toString: String = {
       val todo = s"TODO: ${unprocessedStates.mkString(", ")}"
-      val sstates = states.mkString("\n")
-      val actionsHeader = actions
-      s"$sstates\n$todo"
+      val sstates = s"STATES:\n${states.mkString("\n")}"
+      def fup[T](actions: Transtyle[T]): String = Transtyle.normalize(actions) match {
+        case (st, vs) ⇒
+          s"SymTable: ${ st.map { case (i, s) ⇒ s"[$i → $s]" }.mkString(".")
+          }\nActions:\n${
+            st.map("%15s".format(_)).mkString(" |__| ")
+          }\n${
+            st.map(_ ⇒ "-" * 15).mkString(" |__| ")
+          }\n${
+            if (vs.nonEmpty)
+              vs.grouped(st.size)
+                .zipWithIndex
+                .map {
+                  case (ss, idx) ⇒
+                    ss.map("%15s".format(_)).mkString(" |%02d| ".format(idx))
+                }
+                .mkString("\n")
+          }"
+      }
+      val actionsHeader = fup(gotos)
+      s"$sstates\n$todo\n$actionsHeader"
     }
   }
 
