@@ -1,80 +1,121 @@
 package lr
 
-import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, IndexedSeqFactory}
-import scala.collection.{GenSeqLike, GenTraversableLike, IndexedSeqLike, IndexedSeqOptimized, SeqLike, mutable}
+import scala.collection.generic.{CanBuildFrom, Growable}
+import scala.collection.{GenTraversable, GenTraversableLike, IndexedSeqLike, mutable}
 import scala.collection.immutable._
+import lib.Debuggation
 
-trait SizedPkg extends Any {
-  trait Sized[-T] extends Any { def apply(self: T): Int }
-  trait SizedDecoration[T] extends Any { def size: Int }
-  implicit def sizedDecoration[T](obj: T)(implicit ev: Sized[T]): SizedDecoration[T] = new SizedDecoration[T] {
-    def size: Int = ev(obj)
-  }
-}
-
-trait SizedProviders extends Any {
-  this: SizedPkg ⇒
-
-  implicit def sizedGenTraversableLike[T, Repr]: Sized[GenTraversableLike[T, Repr]] = _.size
-}
-
-trait ContainingPkg extends Any {
-  final class Containing[-C, T]
-
-  sealed trait Container[C] extends Any {
-    type of[T] = Containing[C, T]
-  }
-}
-
-trait ContainingProviders extends Any {
-  this: ContainingPkg ⇒
-
-  implicit def containingGenTraversableLike[T, Repr]: Containing[GenTraversableLike[T, Repr], T] = new Containing()
-}
-
-package object kols extends AnyRef
-  with SizedPkg
-  with SizedProviders
-  with ContainingPkg
-  with ContainingProviders {
-
-  final type ExpandingFacadeWithRepr[Repr] = {
-    type t[A] = ExpandingFacade[A, Repr]
+package object kols
+  extends AnyRef
+{
+  trait Contains[Repr] extends Any { type Elem }
+  object Contains {
+    private[this] case object ContainsInstance extends Contains[Nothing] { type Elem = Nothing }
+    implicit def vector[A]: Contains[Vector[A]] { type Elem = A } =
+      ContainsInstance.asInstanceOf[Contains[Vector[A]] { type Elem = A }]
+    implicit def vectorOpt[A]: Contains[Vector[Option[A]]] { type Elem = Option[A] } =
+      ContainsInstance.asInstanceOf[Contains[Vector[Option[A]]] { type Elem = Option[A] }]
   }
 
-  final implicit class ExpandingFacade[
-  A,
-  Repr <: IndexedSeq[A],
-  ](
-    val self: Repr
-  )
-    extends AnyRef
-      with IndexedSeq[A]
-      with GenericTraversableTemplate[A, ExpandingFacadeWithRepr[Repr]#t]
-      with IndexedSeqLike[A, ExpandingFacadeWithRepr[Repr]#t[A]] {
-    override def length: Int = self.length
-
-    override def apply(idx: Int): A = self.apply(idx)
-
-    override def companion: GenericCompanion[ExpandingFacadeWithRepr[Repr]#t] =
-      new GenericCompanion[ExpandingFacadeWithRepr[Repr]#t] {
-        override def newBuilder[AA]: mutable.Builder[AA, ExpandingFacade[AA, Repr]] = ???
-      }
+  trait Indexable[Repr, A] extends Any {
+    def apply(self: Repr, index: Int): A
+  }
+  object Indexable {
+    implicit def vector[A]: Indexable[Vector[A], A] = _(_)
   }
 
-  object ExpandingFacade {
+  trait Paddable[Repr, A] extends Any {
+    def apply(self: Repr, to: Int, elem: A): Repr
+  }
+  object Paddable {
+    implicit def vector[A]: Paddable[Vector[A], A] = _.padTo(_, _)
+  }
 
-    implicit def canBuildFrom[Repr, A, B](
+  trait Sizable[Repr] extends Any {
+    def apply(self: Repr): Int
+  }
+  object Sizable {
+    implicit def vector[A]: Sizable[Vector[A]] = _.size
+  }
+
+  trait Updatable[Repr, A] extends Any {
+    def apply(self: Repr, index: Int, elem: A): Repr
+  }
+  object Updatable {
+    implicit def vector[A]: Updatable[Vector[A], A] = _.updated(_, _)
+  }
+
+  trait Expanding[Repr] extends Any {
+    type Elem
+
+    def apply(index: Int)(self: Repr): Option[Elem]
+
+    def update(index: Int)(elem: Elem)(self: Repr): Repr
+  }
+
+  final implicit class ExpandingDecoration[Repr](val self: Repr) extends AnyVal {
+    type This = ExpandingDecoration[Repr]
+    type Ev[A] = Expanding[Repr] { type Elem = A }
+
+    private[this] def ev[A](implicit ev_ : Ev[A]): Ev[A] =
+      ev_
+
+    def toExpanding[A: Ev]: This =
+      this
+
+    override def toString: String =
+      s"Expanding:$self"
+
+    def apply[A: Ev](index: Int): Option[A] =
+      ev.apply(index)(self)
+
+    def update[A: Ev](index: Int, elem: A): This =
+      ev.update(index)(elem)(self)
+  }
+
+  object Expanding {
+
+    final implicit case object Point
+
+    final type Point = Point.type
+
+    final implicit class Expanding_[Repr, A](val point: Point)(
       implicit
-      cbf: CanBuildFrom[Repr, B, Repr]
-    ): CanBuildFrom[ExpandingFacade[A, Repr], B, ExpandingFacade[B, Repr]] =
-      new CanBuildFrom[ExpandingFacade[A, Repr], B, ExpandingFacade[B, Repr]] {
-      }
+      get: Indexable[Repr, Option[A]],
+      pad: Paddable[Repr, Option[A]],
+      size: Sizable[Repr],
+      update_ : Updatable[Repr, Option[A]],
+    ) extends Expanding[Repr] {
+      type Elem = A
+
+      def expandFor(index: Int)(self: Repr): Repr =
+        index match {
+          case i if i >= size(self) ⇒ pad(self, i + 1, None)
+          case _ ⇒ self
+        }
+
+      override def apply(index: Int)(self: Repr): Option[A] =
+        get(expandFor(index)(self), index)
+
+      override def update(index: Int)(elem: A)(self: Repr): Repr =
+        update_(expandFor(index)(self), index, Some(elem))
+
+    }
+
+    implicit def expanding[Repr, A](
+      implicit
+      cont: Contains[Repr] { type Elem = Option[A] },
+      get: Indexable[Repr, Option[A]],
+      pad: Paddable[Repr, Option[A]],
+      size: Sizable[Repr],
+      update_ : Updatable[Repr, Option[A]],
+    ): Expanding[Repr] { type Elem = A } =
+      Point
   }
 
-  def lol = {
-    val e = new ExpandingFacade(Vector(12))
-    val wot: ExpandingFacade[Vector[Int], Int] = e.updated(23, 34)
+  def lol(): Unit = println {
+    Vector(Some(12), None).toExpanding.update(12, 5).tpl(_.apply(11))
+      .tpl(_.apply(28))
   }
 }
 

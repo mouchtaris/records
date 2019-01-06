@@ -12,6 +12,8 @@ object lib {
 
   final implicit class Debuggation[T](val self: T) extends AnyVal {
     def tap(f: T ⇒ Unit): T = { f(self); self }
+    def tf[A](f: A ⇒ Unit)(get: T ⇒ A): T = { f(get(self)); self }
+    def tpl[A](get: T ⇒ A): T = tf(println)(get)
 
     private[this] def ptap(f: ⇒ Unit): T = tap(_ ⇒ f)
     private[this] def prln(s: String, sbj: String = self.toString): Unit = println(s"[db5:$s] $sbj")
