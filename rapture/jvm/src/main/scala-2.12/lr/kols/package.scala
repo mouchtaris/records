@@ -78,6 +78,25 @@ package object kols
 
   type UpdatableIn[Repr] = {type t[A] = Updatable[Repr, A]}
 
+  trait Reversible[-T] extends Any {
+    type A
+    type B
+    def apply(self: T): B ⇒ A
+  }
+  final implicit class ReversibleDecoration[T](val self: T) extends AnyVal {
+    def reverse(implicit ev: Reversible[T]): ev.B ⇒ ev.A =
+      ev(self)
+  }
+  object Reversible {
+    implicit def map[a, b]: Reversible[Map[a, b]] { type A = a; type B = b } =
+      new Reversible[Map[a, b]] {
+        override type A = a
+        override type B = b
+        override def apply(self: Map[a, b]): b ⇒ a =
+          self.map { case (a, b) ⇒ (b, a) }
+      }
+  }
+
   trait Expanding[Repr] extends Any {
     type Elem
 
@@ -104,6 +123,10 @@ package object kols
 
     def update[A: Ev](index: Int, elem: A): This =
       ev.update(index)(elem)(self)
+
+    def toVector[A: Ev](implicit size: Sizable[Repr]): Vector[Option[A]] =
+      (0 until size(self)).foldLeft(Vector.empty[Option[A]])(_ :+ apply(_))
+
   }
 
   object ExpandingDecoration {
@@ -164,21 +187,25 @@ package object kols
       Point
   }
 
-  final case class IndexAdapting[Repr, I, Ai, Au](
-    adapt: I ⇒ Int,
+  final case class IndexAdapting[Repr, Ad, I, Ai, Au](
+    adapt: Ad,
     back: Repr,
   )(
     implicit
     get: Indexable[Repr, Ai],
     update_ : Updatable[Repr, Au],
+    toAdaptor: Ad <:< (I ⇒ Int),
   ) {
-    type This = IndexAdapting[Repr, I, Ai, Au]
+    type This = IndexAdapting[Repr, Ad, I, Ai, Au]
 
     def apply(index: I): Ai =
       get(back, adapt(index))
 
     def update(index: I, elem: Au): This =
       copy(back = update_(back, adapt(index), elem))
+
+    def keyIndex(implicit rev: Reversible[Ad] { type A = I; type B = Int }): Int ⇒ I =
+      rev.apply(adapt)
 
     override def toString: String =
       s"IndexAdapting[$adapt]:$back"
@@ -188,32 +215,87 @@ package object kols
 
     object Adaptors {
 
-      def vec2(cols: Int): ((Int, Int)) ⇒ Int = new (((Int, Int)) ⇒ Int) {
+      final case object Identity
+        extends (Int ⇒ Int)
+      {
+        override def apply(i: Int): Int =
+          i
+
+        override def toString: String =
+          "Identity"
+
+        implicit case object Rev extends Reversible[Identity.type] {
+          override type A = Int
+          override type B = Int
+          override def apply(self: Identity.type): Int ⇒ Int =
+            Identity.this
+        }
+      }
+
+      final case class Vec2(cols: Int)
+        extends (((Int, Int)) ⇒ Int)
+      {
         override def apply(i: (Int, Int)): Int = i match {
           case (i, j) if j < cols ⇒ (i * cols) + j
+          case (i, j) ⇒
+            throw new IndexOutOfBoundsException(s"($i, $j): $j probably >= $cols")
         }
         override def toString: String = s"vec2[cols:$cols]"
       }
+      object Vec2 {
+        implicit def reversible: Reversible[Vec2] { type A = (Int, Int); type B = Int } =
+          new Reversible[Vec2] {
+            override type A = (Int, Int)
+            override type B = Int
+            override def apply(v2: Vec2): Int ⇒ (Int, Int) = {
+              i ⇒
+                val row = i / v2.cols
+                val col = i % v2.cols
+                (row, col)
+            }
+          }
+      }
 
-      def mvec2[A, B](fa: A ⇒ Int, fb: B ⇒ Int, cols: Int): ((A, B)) ⇒ Int =  new (((A, B)) ⇒ Int) {
-        private[this] val v2 = vec2(cols)
+      final case class MVec2[a, ada, b, adb](fa: ada, fb: adb, cols: Int)(
+        implicit
+        toAdaptA: ada <:< (a ⇒ Int),
+        toAdaptB: adb <:< (b ⇒ Int),
+      )
+        extends (((a, b)) ⇒ Int)
+      {
+        val v2 = Vec2(cols)
 
-        override def apply(i: (A, B)): Int = i match {
-          case (a, b) ⇒ v2((fa(a), fb(b)))
-        }
+        override def apply(i: (a, b)): Int =
+          i match {
+            case (a, b) ⇒
+              v2.apply((fa(a), fb(b)))
+          }
 
-        override def toString: String = s"mvec2[($fa, $fb)cols:$cols]"
+        override def toString: String =
+          s"mvec2[($fa, $fb)cols:$cols]"
+      }
+
+      object MVec2 {
+        implicit def reversible[a, ada, b, adb](
+          implicit
+          reva: Reversible[ada] { type A = a; type B = Int },
+          revb: Reversible[adb] { type A = b; type B = Int },
+          revv2: Reversible[Vec2] { type A = (Int, Int); type B = Int },
+        ): Reversible[MVec2[a, ada, b, adb]] { type A = (a, b); type B = Int } =
+          new Reversible[MVec2[a, ada, b, adb]] {
+            override type A = (a, b)
+            override type B = Int
+            override def apply(self: MVec2[a, ada, b, adb]): Int ⇒ (a, b) =
+              idx ⇒
+                revv2.apply(self.v2).apply(idx) match {
+                  case (i, j) ⇒
+                    val a = reva.apply(self.fa).apply(i)
+                    val b = revb.apply(self.fb).apply(j)
+                    (a, b)
+                }
+          }
       }
     }
-
-    final class Ctor[I](val adapt: I ⇒ Int) extends AnyVal {
-      def apply[Repr, Ai: IndexableIn[Repr]#t, Au: UpdatableIn[Repr]#t](back: Repr) = IndexAdapting[Repr, I, Ai, Au](
-        adapt, back
-      )
-    }
-
-    def vec2(cols: Int) = new Ctor(Adaptors.vec2(cols))
-    def mvec2[A, B](fa: A ⇒ Int, fb: B ⇒ Int, cols: Int) = new Ctor(Adaptors.mvec2(fa, fb, cols))
   }
 
 
@@ -223,9 +305,6 @@ package object kols
       .update(12, 5)
       .tpl(_.apply(11))
       .tpl(_.apply(28))
-
-    val wat = IndexAdapting.vec2(5)
-    (5 to 8).foldLeft(wat(back)) { (c, i) ⇒ (1 to 3).foldLeft(c) { (c, j) ⇒ c.update((i, j),  12 - i -j) } }
 
     sealed trait N extends Any
     final implicit case object _1 extends N
@@ -238,9 +317,9 @@ package object kols
     final implicit case object _8 extends N
     final implicit case object _9 extends N
     val values = Map(_1 → 1, _2 → 2, _3 → 3, _4 → 4, _5 → 5, _6 → 6, _7 → 7, _8 → 8, _9 → 9)
-    val wor = IndexAdapting.mvec2(values, values, 5)
+    val wor = IndexAdapting(IndexAdapting.Adaptors.MVec2(values, values, 5), back)
     Seq(_5, _6, _7, _8)
-      .foldLeft(wor(back)) { (c, i) ⇒
+      .foldLeft(wor) { (c, i) ⇒
         Seq(_1, _2, _3).foldLeft(c) { (c, j) ⇒
           c.update((i, j), 12 - values(i) - values(j))
         }

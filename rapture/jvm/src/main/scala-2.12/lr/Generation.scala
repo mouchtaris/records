@@ -13,27 +13,27 @@ object Generation {
   type Actions = Transtyle[Action]
   type Gotos = Transtyle[Int]
 
-  type Transtyle[T] = ListMap[Int, ListMap[symbols.Symbol, T]]
+  type Transtyle[T] =
+    kols.IndexAdapting[
+      kols.ExpandingDecoration[Vector[Option[T]]],
+      kols.IndexAdapting.Adaptors.MVec2[
+        Int, kols.IndexAdapting.Adaptors.Identity.type,
+        symbols.Symbol, Map[symbols.Symbol, Int],
+        ],
+      (Int, symbols.Symbol),
+      Option[T],
+      T,
+    ]
   object Transtyle {
-    def empty[T]: Transtyle[T] = ListMap.empty
-
-    def normalize[T](actions: Transtyle[T]): (Map[Int, symbols.Symbol], Vector[Option[T]]) = {
-      val symbolMap: Map[symbols.Symbol, Int] =
-        actions.values.flatMap(_.keys).zipWithIndex.toMap
-      val symbolTable: Map[Int, symbols.Symbol] = symbolMap.map { case (s, i) ⇒ (i, s) }
-      val symbolsOrdered: Vector[symbols.Symbol] = symbolTable.values.toVector
-      val maxId: Int = actions.keys.foldLeft(0)(Math.max)
-      val numSymbols: Int = symbolMap.size
-      val b = Vector.newBuilder[Option[T]]
-      b.sizeHint(maxId * numSymbols)
-      (0 until maxId) foreach { i ⇒
-        val entryMaybe: Option[ListMap[symbols.Symbol, T]] = actions.get(i)
-        symbolsOrdered foreach { sym ⇒
-          b += entryMaybe.flatMap(_.get(sym))
-        }
-      }
-      (symbolTable, b.result())
-    }
+    def empty[T](grammar: Grammar): Transtyle[T] =
+      kols.IndexAdapting(
+        kols.IndexAdapting.Adaptors.MVec2(
+          kols.IndexAdapting.Adaptors.Identity,
+          grammar.symbolTable,
+          grammar.symbolTable.size,
+        ),
+        kols.ExpandingDecoration(Vector.empty[Option[T]])
+      )
   }
 
   implicit val symbolOrdering: Ordering[symbols.Symbol] = Ordering.by(_.toString)
@@ -45,7 +45,7 @@ object Generation {
   val sequiv: SEquiv = (Ordering[State].equiv _).curried
 
   def addAction[T](actions: Transtyle[T], n: Int, s: symbols.Symbol, a: T): Transtyle[T] =
-    actions.updated(n, actions.getOrElse(n, ListMap.empty).updated(s, a))
+    actions.update((n, s), a)
 
 
   //
@@ -57,6 +57,7 @@ object Generation {
     states: StateSet,
     unprocessedStates: Vector[State],
     nextId: Int,
+    grammar: Grammar,
   ) {
 
     //
@@ -83,37 +84,22 @@ object Generation {
     override def toString: String = {
       val todo = s"TODO: ${unprocessedStates.mkString(", ")}"
       val sstates = s"STATES:\n${states.mkString("\n")}"
-      def fup[T](actions: Transtyle[T]): String = Transtyle.normalize(actions) match {
-        case (st, vs) ⇒
-          s"SymTable: ${ st.map { case (i, s) ⇒ s"[$i → $s]" }.mkString(".")
-          }\nActions:\n${
-            st.map("%15s".format(_)).mkString(" |__| ")
-          }\n${
-            st.map(_ ⇒ "-" * 15).mkString(" |__| ")
-          }\n${
-            if (vs.nonEmpty)
-              vs.grouped(st.size)
-                .zipWithIndex
-                .map {
-                  case (ss, idx) ⇒
-                    ss.map("%15s".format(_)).mkString(" |%02d| ".format(idx))
-                }
-                .mkString("\n")
-          }"
-      }
-      val actionsHeader = fup(gotos)
-      s"$sstates\n$todo\n$actionsHeader"
+      def fup[T](actions: Transtyle[T]): String = actions.toString
+      val actionsHeader = fup(actions)
+      val gotosHeader = fup(gotos)
+      s"$sstates\n$todo\n$actionsHeader\n$gotosHeader"
     }
   }
 
   object GState {
-    def apply(state0: State): GState =
+    def apply(grammar: Grammar, state0: State): GState =
       GState(
-        actions = Transtyle.empty,
-        gotos = Transtyle.empty,
+        actions = Transtyle.empty(grammar),
+        gotos = Transtyle.empty(grammar),
         states = TreeSet.empty,
         unprocessedStates = Vector(state0),
         nextId = 1,
+        grammar = grammar,
       )
   }
 }
@@ -222,7 +208,7 @@ final case class Generation(
   //
   // Make an initial generation state
   //
-  def gstate0 = GState(state0)
+  def gstate0 = GState(grammar, state0)
 
   //
   // Generate the next generation state

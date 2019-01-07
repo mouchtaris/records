@@ -23,6 +23,9 @@ object Grammar extends AnyRef
     def apply(symbol: symbols.Symbol): ListSet[Production] =
       self.P.filter(_.is(symbol))
 
+    def symbolTable: Map[symbols.Symbol, Int] =
+      (self.N ++ self.Σ).zipWithIndex.toMap
+
   }
 
 }
