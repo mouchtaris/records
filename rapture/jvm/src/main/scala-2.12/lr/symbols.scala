@@ -8,6 +8,8 @@ object symbols {
 
   object Terminal {
 
+    final case object ε extends Terminal
+
     final case object x extends Terminal
 
     final case object z extends Terminal
@@ -22,7 +24,7 @@ object symbols {
 
   object NonTerminal {
 
-    final case object `S'` extends NonTerminal
+    final case object `<goal>` extends NonTerminal
 
     final case object S extends NonTerminal
 

@@ -26,6 +26,12 @@ object Grammar extends AnyRef
     def symbolTable: Map[symbols.Symbol, Int] =
       (self.N ++ self.Σ).zipWithIndex.toMap
 
+    def productionTable: Map[Production, Int] =
+      self.P.zipWithIndex.toMap
+
+    def first(sym: symbols.Symbol): ListSet[symbols.Symbol] =
+      ???
+
   }
 
 }

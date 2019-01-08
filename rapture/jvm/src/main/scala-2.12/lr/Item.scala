@@ -39,6 +39,8 @@ object Item extends AnyRef
 
     // def cursor: Symbol = expansion(cursorIndex)
     def cursorOpt: Option[symbols.Symbol] = expansion.lift.apply(cursorIndex)
+
+    def isFinal: Boolean = cursorOpt.isEmpty
   }
 
   object lens {

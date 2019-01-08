@@ -11,12 +11,12 @@ trait GrammarBuilding extends Any {
       .to
 
   private[this] def collectFromSymbols[S <: symbols.Symbol : ClassTag](syms: Iterable[symbols.Symbol]): ListSet[S] =
-    syms.toVector
+    syms
       .collect { case symbol: S ⇒ symbol }
       .to
 
   private[this] def collectFromProductions[S <: symbols.Symbol : ClassTag](prods: Iterable[Production]): ListSet[S] =
-    prods.toVector
+    prods
       .map { case Production(symbol, Expansion(expansion)) ⇒ symbol +: expansion }
       .flatMap(collectFromSymbols[S])
       .to

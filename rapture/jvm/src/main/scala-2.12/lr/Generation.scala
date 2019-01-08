@@ -4,6 +4,8 @@ import scala.annotation.tailrec
 import scala.collection.immutable._
 import lib.Debuggation
 
+import scala.collection.GenTraversableOnce
+
 object Generation {
   sealed trait Action
   final case class Shift() extends Action
@@ -20,9 +22,13 @@ object Generation {
     val core: TranstyleCore[T] = Transtyle.emptyCore[T](grammar)
   ) {
     val make = Transtyle[T](grammar) _
-    def update: (((Int, symbols.Symbol), T)) ⇒ Transtyle[T] = {
+    val update: (((Int, symbols.Symbol), T)) ⇒ Transtyle[T] = {
       case ((stateId, symbol), action) ⇒
         val row0 = core.getOrElse(stateId, ListMap.empty)
+        row0.get(symbol) match {
+          case Some(obj) ⇒ throw new Exception(s"$obj / $action conflict for [$stateId, $symbol]")
+          case _ ⇒ ()
+        }
         val row1 = row0.updated(symbol, action)
         val core2 = core.updated(stateId, row1)
         make(core2)
@@ -43,14 +49,22 @@ object Generation {
       val allStrings = headers.map(_.toString) ++ allValues.map(_.toString)
       val colWidth = allStrings.map(_.length).foldLeft(3)(Math.max)
       val stateNumWidth = "%d".format(statesNum).length
+      val colSep = " | "
+      def col(s: Any): String = s"%${colWidth}s".format(s)
+      def cols[T](t: TraversableOnce[T]): String = t.map(col).mkString(colSep)
       val header = {
         val statesHeader = " " * stateNumWidth
-        val colsHeader = headers.map(s"%${colWidth}s".format(_)).mkString(" | ")
-        s"$statesHeader || $colsHeader"
+        s"$statesHeader || ${cols(headers)}"
       }
-      def row(i: Int): String =
-        s"Row $i"
-      Vector(header) ++ (0 to statesNum).map()
+      def row(i: Int): String = {
+        val rowId = s"%0${stateNumWidth}d".format(i)
+        val row = actions.core.getOrElse(i, ListMap.empty)
+        def item(s: symbols.Symbol) = row.get(s).map(_.toString).getOrElse("")
+        val items = cols(headers.map(item))
+        s"$rowId || $items"
+      }
+      val lines = Vector(header) ++ (0 to statesNum).map(row)
+      lines mkString "\n"
     }
   }
 
@@ -238,7 +252,7 @@ final case class Generation(
     // only close i0 for the iteration of every looked-at symbol
     val i0 = gstate.i0
 
-    def transit(gstate: GState, sym: symbols.Symbol): GState = {
+    def transit1(gstate: GState, sym: symbols.Symbol): GState = {
       def addAction_[T](actions: Transtyle[T], obj: T): Transtyle[T] = addAction(actions, i0.i, sym, obj)
 
       val (i1, gstate_): (State, GState) =
@@ -263,6 +277,15 @@ final case class Generation(
         gotos = addAction_(gstate.gotos, i1.i),
       )
     }
+
+    def transit2(gstate: GState, sym: symbols.Symbol): GState = {
+      gstate.i0.items
+        .filter(_ isFinal)
+      ???
+    }
+
+    def transit(gstate: GState, sym: symbols.Symbol): GState =
+      transit1(gstate, sym)
 
     lookedAt(i0.dbI0)
       .dbLookedAt

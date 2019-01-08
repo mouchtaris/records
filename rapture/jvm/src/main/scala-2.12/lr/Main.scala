@@ -30,8 +30,6 @@ object Main {
     println("==")
     val s6 = g next s5
     println(s6)
-
-    kols.lol()
   }
 
 }
