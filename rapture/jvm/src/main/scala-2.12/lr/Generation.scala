@@ -13,27 +13,45 @@ object Generation {
   type Actions = Transtyle[Action]
   type Gotos = Transtyle[Int]
 
-  type Transtyle[T] =
-    kols.IndexAdapting[
-      kols.ExpandingDecoration[Vector[Option[T]]],
-      kols.IndexAdapting.Adaptors.MVec2[
-        Int, kols.IndexAdapting.Adaptors.Identity.type,
-        symbols.Symbol, Map[symbols.Symbol, Int],
-        ],
-      (Int, symbols.Symbol),
-      Option[T],
-      T,
-    ]
+  type TranstyleCore[T] = ListMap[Int, ListMap[symbols.Symbol, T]]
+  final case class Transtyle[T](
+    grammar: Grammar
+  )(
+    val core: TranstyleCore[T] = Transtyle.emptyCore[T](grammar)
+  ) {
+    val make = Transtyle[T](grammar) _
+    def update: (((Int, symbols.Symbol), T)) ⇒ Transtyle[T] = {
+      case ((stateId, symbol), action) ⇒
+        val row0 = core.getOrElse(stateId, ListMap.empty)
+        val row1 = row0.updated(symbol, action)
+        val core2 = core.updated(stateId, row1)
+        make(core2)
+    }
+  }
   object Transtyle {
-    def empty[T](grammar: Grammar): Transtyle[T] =
-      kols.IndexAdapting(
-        kols.IndexAdapting.Adaptors.MVec2(
-          kols.IndexAdapting.Adaptors.Identity,
-          grammar.symbolTable,
-          grammar.symbolTable.size,
-        ),
-        kols.ExpandingDecoration(Vector.empty[Option[T]])
-      )
+    def empty[T](grammar: Grammar) = Transtyle[T](grammar)(emptyCore[T](grammar))
+    def emptyCore[T](grammar: Grammar): TranstyleCore[T] = ListMap.empty
+
+    def numCols[T](actions: Transtyle[T]): Int = actions.grammar.symbolTable.size
+    def nulRows[T](actions: Transtyle[T]): Int = actions.core.size
+    final case class RenderData()
+    def renderData[T](actions: Transtyle[T]) = {
+      val symbolTable = actions.grammar.symbolTable
+      val headers = symbolTable.keys.toVector
+      val statesNum = actions.core.keys.foldLeft(0)(Math.max)
+      val allValues = actions.core.values.flatMap(_.values)
+      val allStrings = headers.map(_.toString) ++ allValues.map(_.toString)
+      val colWidth = allStrings.map(_.length).foldLeft(3)(Math.max)
+      val stateNumWidth = "%d".format(statesNum).length
+      val header = {
+        val statesHeader = " " * stateNumWidth
+        val colsHeader = headers.map(s"%${colWidth}s".format(_)).mkString(" | ")
+        s"$statesHeader || $colsHeader"
+      }
+      def row(i: Int): String =
+        s"Row $i"
+      Vector(header) ++ (0 to statesNum).map()
+    }
   }
 
   implicit val symbolOrdering: Ordering[symbols.Symbol] = Ordering.by(_.toString)
@@ -45,7 +63,7 @@ object Generation {
   val sequiv: SEquiv = (Ordering[State].equiv _).curried
 
   def addAction[T](actions: Transtyle[T], n: Int, s: symbols.Symbol, a: T): Transtyle[T] =
-    actions.update((n, s), a)
+    actions.update(((n, s), a))
 
 
   //
@@ -84,7 +102,7 @@ object Generation {
     override def toString: String = {
       val todo = s"TODO: ${unprocessedStates.mkString(", ")}"
       val sstates = s"STATES:\n${states.mkString("\n")}"
-      def fup[T](actions: Transtyle[T]): String = actions.toString
+      def fup[T](actions: Transtyle[T]): String = Transtyle.renderData(actions)
       val actionsHeader = fup(actions)
       val gotosHeader = fup(gotos)
       s"$sstates\n$todo\n$actionsHeader\n$gotosHeader"
