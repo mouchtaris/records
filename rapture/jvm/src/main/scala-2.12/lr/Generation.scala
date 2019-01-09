@@ -276,7 +276,130 @@ final case class Generation(
             (mod, firsts1)
         }
         mod(ListSet.empty)
+    }
+
+  //
+  // Follow(A) -- terminals that can legally follow non-terminal A
+  //
+  object Follow {
+    import symbols.{ Symbol ⇒ S }
+    import scala.collection.immutable.{ ListSet ⇒ Set }
+
+    final type Follow = Set[S]
+    object Follow {
+      val empty: Follow =
+        Set.empty
+
+      type Mod =
+        Follow ⇒ Follow
+
+      val add: S ⇒ Mod =
+        s ⇒
+          _ + s
+
+      val addAll: Traversable[S] ⇒ Mod =
+        s ⇒
+          _ ++ s
+    }
+
+    final type Follows = Map[S, Follow]
+    object Follows {
+      val zero: Follows = Map.empty
+
+      type Access = Follows ⇒ Follow
+
+      val get: S ⇒ Access =
+        s ⇒
+          _.getOrElse(s, Follow.empty)
+
+
+      type Mod = Follows ⇒ Follows
+      object Mod {
+        val zero: Mod = identity
+      }
+
+      val update: S ⇒ Follow.Mod ⇒ Mod =
+        s ⇒ mod ⇒ self ⇒
+          self.updated(s, mod(get(s)(self)))
+    }
+
+    final case class State(
+      mod: Follows.Mod,
+      prevExpSym: Option[S],
+    )
+    object State {
+      val zero = State(
+        mod = Follows.Mod.zero,
+        prevExpSym = None,
+      )
+      //
+      // Mod
+      //
+      type Mod = State ⇒ State
+      val addMod: Follows.Mod ⇒ Mod =
+        mod ⇒ state ⇒
+          state.copy(mod = state.mod.andThen(mod))
+
+      //
+      // Pred
+      //
+      type Pred = State ⇒ Boolean
+      val conditional: Pred ⇒ Mod ⇒ Mod =
+        pred ⇒ mod ⇒ state ⇒
+          if (pred(state)) mod(state) else state
+
+      //
+      // Accessors
+      //
+      def using[T]: (State ⇒ T) ⇒ (T ⇒ Mod) ⇒ Mod =
+        access ⇒ mod ⇒ state ⇒
+          mod(access(state))(state)
+      def usingOpt[T]: (State ⇒ Option[T]) ⇒ (T ⇒ Mod) ⇒ Mod =
+        access ⇒ mod ⇒ state ⇒
+          access(state)
+            .map(obj ⇒ mod(obj)(state))
+            .getOrElse(state)
+
+      //
+      // Facades
+      //
+      object Pred {
+        val hasPrevExpSym: Pred = _.prevExpSym.isDefined
+      }
+      object Mod {
+        val addPlain: S ⇒ S ⇒ Mod =
+          s ⇒ f ⇒ addMod(
+            Follows.update(s)(Follow.add(f))
+          )
+        val addFirstOfTo: S ⇒ S ⇒ Mod =
+          of ⇒ to ⇒ addMod(
+            Follows.update(to)(Follow.addAll(first(of) - ε))
+          )
+      }
+    }
+
+    def follows: Map[S, Set[S]] = {
+      import symbols.Terminal.EOS
+      import symbols.NonTerminal.`<goal>`
+      import State.Mod.addFirstOfTo
+      import State.Mod.addPlain
+      import State.usingOpt
+
+      val smod0 = addPlain(`<goal>`)(EOS)
+
+      grammar.P.foldLeft(smod0) {
+        case (smod, Production(prodSym, Expansion(prodExp))) ⇒
+          prodExp.foldLeft(smod) {
+            case (smod, prodSym) ⇒
+              val smod1 = usingOpt(_.prevExpSym)(addFirstOfTo(prodSym))
+              smod andThen smod1
+          }
+      }
+      ???
+    }
+
   }
+
 
   //
   // Make an initial state from the given symbol
