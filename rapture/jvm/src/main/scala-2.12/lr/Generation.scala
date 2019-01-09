@@ -3,6 +3,7 @@ package lr
 import scala.annotation.tailrec
 import scala.collection.immutable._
 import lib.Debuggation
+import lr.symbols.Terminal.ε
 
 import scala.collection.GenTraversableOnce
 
@@ -222,6 +223,60 @@ final case class Generation(
     State.lens.items(state)
       .map(_.cursorOpt)
       .collect { case Some(symbol) ⇒ symbol }
+
+  //
+  // Create the first(A) set of the given symbol.
+  //
+  // first(A) is the set of terminal symbols that could begin
+  // all A-productions.
+  //
+  def first(
+    sym: symbols.Symbol,
+    firsts: Map[symbols.Symbol, ListSet[symbols.Symbol]] = Map.empty
+  ): ListSet[symbols.Symbol] =
+    sym match {
+      case _: symbols.Terminal ⇒
+        ListSet(sym)
+      case _: symbols.NonTerminal ⇒
+        type SSet = ListSet[symbols.Symbol]
+        type Mod = SSet ⇒ SSet
+        object Mod {
+          import symbols.Terminal.ε
+          val noop: Mod = identity
+          val addEmpty: Mod = _ + ε
+          val hasEmpty: SSet ⇒ Boolean = _.contains(ε)
+        }
+        // All together
+        type Firsts = Map[symbols.Symbol, SSet]
+        type State = (Mod, Firsts)
+        val state0: State = (Mod.noop, firsts)
+        def getFirsts(sym: symbols.Symbol)(firsts: Firsts): (SSet, Firsts) =
+          firsts.get(sym).map(fs ⇒ (fs, firsts)).getOrElse {
+            val symFirsts = first(sym, firsts)
+            val firsts1 = firsts.updated(sym, symFirsts)
+            (symFirsts, firsts1)
+          }
+        val (mod, _): (Mod, Firsts) = grammar(sym).foldLeft(state0) {
+          case ((accuMod, firsts), Production(symbol, Expansion(exp))) ⇒
+            // if A := ε add ε to first(A)
+            // if A =: Y... add first(Y) to first(A)
+            // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
+            val step0: Mod = if (exp.isEmpty) Mod.addEmpty else Mod.noop
+            val state0 = (true, step0, firsts)
+            val (_, mod, firsts1) = exp.foldLeft(state0) {
+              // just skip the same symbol completely
+              case (state, `sym`) ⇒ state
+              case ((prevHasEmpty, accuMod, firsts), prodSym) ⇒
+                val (symFirsts, firsts1): (SSet, Firsts) = getFirsts(prodSym)(firsts)
+                val hasEmpty: Boolean = Mod.hasEmpty(symFirsts)
+                val addFirsts: Mod = if (prevHasEmpty) _ ++ symFirsts else Mod.noop
+                val nextMod: Mod = accuMod andThen addFirsts
+                (hasEmpty, nextMod, firsts1)
+            }
+            (mod, firsts1)
+        }
+        mod(ListSet.empty)
+  }
 
   //
   // Make an initial state from the given symbol

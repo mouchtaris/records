@@ -30,6 +30,11 @@ object Main {
     println("==")
     val s6 = g next s5
     println(s6)
+
+    g.grammar.symbolTable.keys.map(s ⇒ (s, g.first(s))).foreach {
+      case (s, first) ⇒
+        println(s"FIRST($s) = $first")
+    }
   }
 
 }
