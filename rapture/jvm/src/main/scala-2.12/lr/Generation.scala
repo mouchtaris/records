@@ -299,8 +299,12 @@ final case class Generation(
       final val `0`: StateMod = identity
       final val updateResult: Set.Mod ⇒ StateMod = State.withResult
       final val addSymbol: S ⇒ StateMod = Set.add andThen updateResult
+      final val addSymbols: GenTraversableOnce[S] ⇒ StateMod = Set.addAll andThen updateResult
       final val addSelf: StateMod = using(_.symbol)(addSymbol)
       final val addEmpty: StateMod = addSymbol(ε)
+      final val recurse: S ⇒ StateMod =
+        s ⇒
+          updateResult(Set.addAll(mod(State.withSymbol(s)(State.zero)).result))
     }
 
     final type Condition = State ⇒ Boolean
@@ -403,6 +407,7 @@ final case class Generation(
       import Condition.isTerminal
       import Condition.not
       import StateMod.addEmpty
+      import StateMod.recurse
 
       val isExpEmpty: Condition =
         _.prod exists (_.expansion.value.isEmpty)
@@ -424,7 +429,8 @@ final case class Generation(
         iff(not(isExpEmpty) && not(isSelf)) {
           foreachOpt(_.prod map (_.expansion.value)) {
             expSym ⇒
-              state ⇒ state
+              // if A := Y... add first(Y) to first(A)
+              recurse(expSym)
               // TODO continue
           }
         }
@@ -448,8 +454,11 @@ final case class Generation(
         `0`
     }
 
+    def apply(sym: S): Set[S] =
+      mod(State.withSymbol(sym)(State.zero)).result
   }
-  def first(
+  def first(s: symbols.Symbol): ListSet[symbols.Symbol] = First(s)
+  def first2(
     sym: symbols.Symbol,
     firsts: Map[symbols.Symbol, ListSet[symbols.Symbol]] = Map.empty
   ): ListSet[symbols.Symbol] =
@@ -471,7 +480,7 @@ final case class Generation(
         val state0: State = (Mod.noop, firsts)
         def getFirsts(sym: symbols.Symbol)(firsts: Firsts): (SSet, Firsts) =
           firsts.get(sym).map(fs ⇒ (fs, firsts)).getOrElse {
-            val symFirsts = first(sym, firsts)
+            val symFirsts = first2(sym, firsts)
             val firsts1 = firsts.updated(sym, symFirsts)
             (symFirsts, firsts1)
           }
