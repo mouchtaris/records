@@ -233,14 +233,28 @@ final case class Generation(
       final def iff[C](other: C ⇒ A): C ⇒ B = self << other
     }
 
-    private[this] final class Impl[A, B](val self: A ⇒ B) extends FunctionDecoration[A, B]
+    private[this] final class Impl[A, B](override val self: A ⇒ B) extends FunctionDecoration[A, B]
 
     implicit def toDecoratedFunction[A, B](self: A ⇒ B): FunctionDecoration[A, B] =
       new Impl(self)
   }
 
+  trait SuperFunctionalConditionDecorations extends Any {
+    this: SuperFunctionalTemplate ⇒
+
+    trait ConditionDecoration {
+      def self: Condition
+      final def &&(other: Condition): Condition = Condition.and(self)(other)
+    }
+
+    private[this] final class Impl(override val self: Condition) extends ConditionDecoration
+
+    implicit def toConditionDecoration(self: Condition): ConditionDecoration = new Impl(self)
+  }
+
   trait SuperFunctionalTemplate extends AnyRef
     with SuperFunctionalFunctionDecorations
+    with SuperFunctionalConditionDecorations
   {
     final type S = symbols.Symbol
     final type Set[T] = scala.collection.immutable.ListSet[T]
@@ -263,12 +277,20 @@ final case class Generation(
     }
     trait StateCompanionLike {
       val withResult: Set.Mod ⇒ StateMod
+      val withSymbol: S ⇒ StateMod
+      val zero: State
     }
+    val mod: StateMod // MasterMod
 
     object Set {
       type Mod = Set[S] ⇒ Set[S]
-      val zero: Mod = identity
+      val zero: Set[S] = ListSet.empty
       val add: S ⇒ Mod = s ⇒ _ + s
+      val addAll: GenTraversableOnce[S] ⇒ Mod = s ⇒ _ ++ s
+    }
+
+    object S {
+      val zero: S = symbols.Terminal.EOS
     }
 
     final type StateMod = State ⇒ State
@@ -292,6 +314,8 @@ final case class Generation(
     trait ConditionBase {
       val not: Condition ⇒ Condition =
         cond ⇒ state ⇒ !cond(state)
+      val and: Condition ⇒ Condition ⇒ Condition =
+        condA ⇒ condB ⇒ state ⇒ condA(state) && condB(state)
       def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
         obj ⇒ _ ⇒ f(obj)
     }
@@ -307,11 +331,17 @@ final case class Generation(
       access ⇒
         usingOpt(s ⇒ Some(access(s)))
 
-    final def foreach[T]: (State ⇒ Iterable[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+    final def foreachOpt[T]: (State ⇒ Option[Iterable[T]]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
       iter ⇒ toMod ⇒ state ⇒ {
-        val mod = iter(state).foldLeft(StateMod.`0`) { (mod, t) ⇒ mod >> toMod(t) }
+        val mod = iter(state)
+          .map(_.foldLeft(StateMod.`0`) { (mod, t) ⇒ mod >> toMod(t) })
+          .getOrElse(StateMod.`0`)
         mod(state)
       }
+
+    final def foreach[T]: (State ⇒ Iterable[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+      iter ⇒
+        foreachOpt(s ⇒ Some(iter(s)))
   }
 
   //
@@ -330,8 +360,14 @@ final case class Generation(
 
 
     object StateImpl extends StateCompanionLike {
+      override val zero: State = StateImpl(
+        result = Set.zero,
+        symbol = S.zero,
+      )
       override val withResult: Set.Mod ⇒ StateMod =
         mod ⇒ state ⇒ state.copy(result = mod(state.result))
+      override val withSymbol: S ⇒ StateMod =
+        s ⇒ _.copy(symbol = s)
       val withProduction: Production ⇒ StateMod =
         prod ⇒ _.copy(prod = Some(prod))
     }
@@ -360,27 +396,43 @@ final case class Generation(
       iff(isTerminal)(addSelf)
     }
 
+    // if A := ε add ε to first(A)
+    // if A =: Y... add first(Y) to first(A)
+    // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
     val ifNotTerminal: StateMod = {
       import Condition.isTerminal
       import Condition.not
       import StateMod.addEmpty
 
       val isExpEmpty: Condition =
-        _.prod.exists(_.expansion.value.isEmpty)
+        _.prod exists (_.expansion.value.isEmpty)
 
+      // if A := ε add ε to first(A)
       val ifExpEmpty: StateMod =
-        iff(isExpEmpty)(addEmpty)
+        iff(isExpEmpty) {
+          addEmpty
+        }
 
+      // skipping self...
+      val isSelf: Condition =
+        state ⇒
+          state.prod exists (_.symbol == state.symbol)
+
+      // if A := Y... add first(Y) to first(A)
+      // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
       val ifExpNonEmpty: StateMod =
-        iff(not(isExpEmpty)) {
-          state ⇒ state
+        iff(not(isExpEmpty) && not(isSelf)) {
+          foreachOpt(_.prod map (_.expansion.value)) {
+            expSym ⇒
+              state ⇒ state
+              // TODO continue
+          }
         }
 
       iff(not(isTerminal)) {
         using(_.symbol) { symbol ⇒
           foreach(_ ⇒ grammar(symbol)) {
-            `0` >>
-              State.withProduction(_) >>
+            State.withProduction(_) >>
               ifExpEmpty >>
               ifExpNonEmpty >>
               `0`
@@ -389,11 +441,7 @@ final case class Generation(
       }
     }
 
-
-    // if A := ε add ε to first(A)
-    // if A =: Y... add first(Y) to first(A)
-    // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
-    val mod: StateMod = {
+    override val mod: StateMod = {
       `0` >>
         ifTerminal >>
         ifNotTerminal >>
