@@ -224,12 +224,183 @@ final case class Generation(
       .map(_.cursorOpt)
       .collect { case Some(symbol) ⇒ symbol }
 
+  trait SuperFunctionalFunctionDecorations extends Any {
+    trait FunctionDecoration[A, B] {
+      def self: A ⇒ B
+
+      final def >>[C](other: B ⇒ C): A ⇒ C = self andThen other
+      final def <<[C](other: C ⇒ A): C ⇒ B = other andThen self
+      final def iff[C](other: C ⇒ A): C ⇒ B = self << other
+    }
+
+    private[this] final class Impl[A, B](val self: A ⇒ B) extends FunctionDecoration[A, B]
+
+    implicit def toDecoratedFunction[A, B](self: A ⇒ B): FunctionDecoration[A, B] =
+      new Impl(self)
+  }
+
+  trait SuperFunctionalTemplate extends AnyRef
+    with SuperFunctionalFunctionDecorations
+  {
+    final type S = symbols.Symbol
+    final type Set[T] = scala.collection.immutable.ListSet[T]
+    final type Map[K, V] = scala.collection.immutable.ListMap[K, V]
+    final val JavaConverters = scala.collection.JavaConverters
+
+    //
+    // Override
+    //
+    type State <: StateLike
+    type StateCompanion <: StateCompanionLike
+    type StateModCompanion <: StateModBase
+    type ConditionCompanion <: ConditionBase
+    val State: StateCompanion
+    val StateMod: StateModCompanion
+    val Condition: ConditionCompanion
+    trait StateLike {
+      val result: Set[S]
+      val symbol: S
+    }
+    trait StateCompanionLike {
+      val withResult: Set.Mod ⇒ StateMod
+    }
+
+    object Set {
+      type Mod = Set[S] ⇒ Set[S]
+      val zero: Mod = identity
+      val add: S ⇒ Mod = s ⇒ _ + s
+    }
+
+    final type StateMod = State ⇒ State
+
+    trait StateModBase {
+      final val `0`: StateMod = identity
+      final val updateResult: Set.Mod ⇒ StateMod = State.withResult
+      final val addSymbol: S ⇒ StateMod = Set.add andThen updateResult
+      final val addSelf: StateMod = using(_.symbol)(addSymbol)
+      final val addEmpty: StateMod = addSymbol(ε)
+    }
+
+    final type Condition = State ⇒ Boolean
+    final val iff: Condition ⇒ StateMod ⇒ StateMod =
+      cond ⇒ mod ⇒ state ⇒
+        if (cond(state)) mod(state) else state
+    final val conditional: StateMod ⇒ Condition ⇒ StateMod =
+      mod ⇒ cond ⇒
+        iff(cond)(mod)
+
+    trait ConditionBase {
+      val not: Condition ⇒ Condition =
+        cond ⇒ state ⇒ !cond(state)
+      def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
+        obj ⇒ _ ⇒ f(obj)
+    }
+
+    final def usingOpt[T]: (State ⇒ Option[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+      access ⇒ mod ⇒ state ⇒
+        access(state)
+          .map { obj ⇒ mod(obj) }
+          .getOrElse(StateMod.`0`)
+          .apply(state)
+
+    final def using[T]: (State ⇒ T) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+      access ⇒
+        usingOpt(s ⇒ Some(access(s)))
+
+    final def foreach[T]: (State ⇒ Iterable[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+      iter ⇒ toMod ⇒ state ⇒ {
+        val mod = iter(state).foldLeft(StateMod.`0`) { (mod, t) ⇒ mod >> toMod(t) }
+        mod(state)
+      }
+  }
+
   //
   // Create the first(A) set of the given symbol.
   //
   // first(A) is the set of terminal symbols that could begin
   // all A-productions.
   //
+  final object First extends SuperFunctionalTemplate {
+    final case class StateImpl(
+      override val symbol: S,
+      override val result: Set[S],
+      prod: Option[Production] = None, // current production when iterating productions
+      prevHasEmpty: Boolean = true, // previous production has ε when iterating productions
+    ) extends StateLike
+
+
+    object StateImpl extends StateCompanionLike {
+      override val withResult: Set.Mod ⇒ StateMod =
+        mod ⇒ state ⇒ state.copy(result = mod(state.result))
+      val withProduction: Production ⇒ StateMod =
+        prod ⇒ _.copy(prod = Some(prod))
+    }
+
+    object StateModCompanion extends StateModBase {
+    }
+
+    object ConditionCompanion extends ConditionBase {
+      val isTerminal: Condition = _.symbol.isInstanceOf[symbols.Terminal]
+    }
+
+    override type State = StateImpl
+    override type StateCompanion = StateImpl.type
+    override val State: StateCompanion = StateImpl
+    override type StateModCompanion = StateModCompanion.type
+    override val StateMod: StateModCompanion = StateModCompanion
+    override type ConditionCompanion = ConditionCompanion.type
+    override val Condition: ConditionCompanion = ConditionCompanion
+
+    import StateMod.`0`
+
+    val ifTerminal: StateMod = {
+      import Condition.isTerminal
+      import StateMod.addSelf
+
+      iff(isTerminal)(addSelf)
+    }
+
+    val ifNotTerminal: StateMod = {
+      import Condition.isTerminal
+      import Condition.not
+      import StateMod.addEmpty
+
+      val isExpEmpty: Condition =
+        _.prod.exists(_.expansion.value.isEmpty)
+
+      val ifExpEmpty: StateMod =
+        iff(isExpEmpty)(addEmpty)
+
+      val ifExpNonEmpty: StateMod =
+        iff(not(isExpEmpty)) {
+          state ⇒ state
+        }
+
+      iff(not(isTerminal)) {
+        using(_.symbol) { symbol ⇒
+          foreach(_ ⇒ grammar(symbol)) {
+            `0` >>
+              State.withProduction(_) >>
+              ifExpEmpty >>
+              ifExpNonEmpty >>
+              `0`
+          }
+        }
+      }
+    }
+
+
+    // if A := ε add ε to first(A)
+    // if A =: Y... add first(Y) to first(A)
+    // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
+    val mod: StateMod = {
+      `0` >>
+        ifTerminal >>
+        ifNotTerminal >>
+        `0`
+    }
+
+  }
   def first(
     sym: symbols.Symbol,
     firsts: Map[symbols.Symbol, ListSet[symbols.Symbol]] = Map.empty
@@ -315,7 +486,8 @@ final case class Generation(
 
       type Mod = Follows ⇒ Follows
       object Mod {
-        val zero: Mod = identity
+        val noop: Mod = identity
+        val zero: Mod = noop
       }
 
       val update: S ⇒ Follow.Mod ⇒ Mod =
@@ -371,14 +543,21 @@ final case class Generation(
           s ⇒ f ⇒ addMod(
             Follows.update(s)(Follow.add(f))
           )
+        // if A := aBb then { First(b) - ε } in Follow(B)
+        // if A := aBb and ε in First(b) then Follow(A) in Follow(B)
         val addFirstOfTo: S ⇒ S ⇒ Mod =
-          of ⇒ to ⇒ addMod(
-            Follows.update(to)(Follow.addAll(first(of) - ε))
-          )
+          of ⇒ to ⇒ {
+            val firstOf: Set[S] = first(of)
+            val hasEmpty: Boolean = firstOf.contains(ε)
+            val firstOfPure: Set[S] = firstOf - ε
+            val mod1: Follows.Mod = Follows.update(to)(Follow.addAll(firstOfPure))
+            val mod2: Follows.Mod = if (hasEmpty) ??? else Follows.Mod.noop
+            addMod( mod1 andThen mod2 )
+          }
       }
     }
 
-    def follows: Map[S, Set[S]] = {
+    def follows: S ⇒ Set[S] = {
       import symbols.Terminal.EOS
       import symbols.NonTerminal.`<goal>`
       import State.Mod.addFirstOfTo
