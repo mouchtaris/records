@@ -79,44 +79,6 @@ object GenerationChecks
       yield Generation(g)
   }
 
-  implicit def arbitrarySuperFunctional(implicit g: Generation): Arb[g.SuperFunctionalTemplate] = Arb {
-    for {
-      syms ← A[ListSet[S]]
-      s ← A[S]
-    }
-      yield
-        new g.SuperFunctionalTemplate {
-
-          case class StateImpl(
-            override val result: Set[S] = syms,
-            override val symbol: S = s,
-          ) extends StateLike
-
-          override type State = StateImpl
-
-          object StateCompanionImpl extends StateCompanionLike {
-            override val withResult: Set.Mod ⇒ StateMod = mod ⇒ state ⇒ state.copy(result = mod(state.result))
-            override val withSymbol: S ⇒ StateMod = s ⇒ _.copy(symbol = s)
-            override val zero: State = StateImpl()
-          }
-
-          override type StateCompanion = StateCompanionImpl.type
-
-          object StateModCompanionImpl extends StateModCompanionBase
-
-          override type StateModCompanion = StateModCompanionImpl.type
-
-          object ConditionImpl extends ConditionBase
-
-          override type ConditionCompanion = ConditionImpl.type
-
-          override val State: StateCompanion = StateCompanionImpl
-          override val StateMod: StateModCompanion = StateModCompanionImpl
-          override val Condition: ConditionCompanion = ConditionImpl
-          override val mod: StateMod = StateMod.`0`
-        }
-  }
-
   property("hello") = forAll { implicit g: Generation ⇒
     g == g
   }

@@ -31,11 +31,16 @@ object Main {
     val s6 = g next s5
     println(s6)
 
-    g.grammar.symbolTable.keys.map(s ⇒ (s, g.first(s))).foreach {
-      case (s, first) ⇒
-        println(s"FIRST($s) = $first")
+//    g.grammar.symbolTable.keys.map(s ⇒ (s, g.first(s))).foreach {
+//      case (s, first) ⇒
+//        println(s"FIRST($s) = $first")
+//    }
+    println {
+      g.First.test()
+        .map(_.map(o ⇒ s"OK $o").mkString("\n"))
+        .recover { case ex ⇒ s"FAILED FIRST: $ex" }
+        .get
     }
-    println(g.First.test().map(_.map(o ⇒ s"OK $o").mkString("\n")).recover { case ex ⇒ ex.getMessage }.get)
   }
 
 }
