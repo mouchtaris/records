@@ -35,6 +35,7 @@ object Main {
       case (s, first) ⇒
         println(s"FIRST($s) = $first")
     }
+    println(g.First.test().map(_.map(o ⇒ s"OK $o").mkString("\n")).recover { case ex ⇒ ex.getMessage }.get)
   }
 
 }

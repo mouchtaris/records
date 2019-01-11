@@ -2,6 +2,7 @@ package lr
 
 import scala.annotation.tailrec
 import scala.collection.immutable._
+import scala.util.{ Try, Success, Failure }
 import lib.Debuggation
 import lr.symbols.Terminal.ε
 
@@ -252,9 +253,71 @@ final case class Generation(
     implicit def toConditionDecoration(self: Condition): ConditionDecoration = new Impl(self)
   }
 
+  trait SuperFunctionalTesting {
+    this: SuperFunctionalTemplate ⇒
+
+    private[this] object Tests {
+      type Result = Try[String]
+      object Result {
+        val `0`: Result = Success("<no tests>")
+      }
+      final case class ResultEv[R](toResult: Test[R] ⇒ Result)
+      object ResultEv {
+        implicit def fromBool: ResultEv[Boolean] = ResultEv {
+          test ⇒
+            if (test.run())
+              Success(test.name)
+            else
+              Failure(new Exception(test.name))
+        }
+      }
+
+      final case class Test[R](name: String, run: () ⇒ R)
+      final case class ClosedTest[R](test: Test[R], resultEv: ResultEv[R]) {
+        def run(): Result =
+          resultEv.toResult(test)
+      }
+      object ClosedTest {
+        implicit def fromTest[R: ResultEv](test: Test[R]): ClosedTest[R] =
+          ClosedTest(test, implicitly)
+      }
+      // Helper mods
+      val True: Condition = _ ⇒ true
+      val False: Condition = _ ⇒ false
+      val Spy: StateMod = StateMod.addEmpty
+      val SpyTaken: StateMod ⇒ Boolean = _(State.zero).result.nonEmpty
+
+      val Tests: Vector[ClosedTest[_]] = Vector(
+        Test("iff true always taken", () ⇒ SpyTaken {
+          iff(True)(Spy)
+        }),
+        Test("iff false never taken", () ⇒ !SpyTaken {
+          iff(False)(Spy)
+        }),
+        Test("conditional true always taken", () ⇒ SpyTaken {
+          conditional(Spy)(True)
+        }),
+        Test("conditional false never taken", () ⇒ !SpyTaken {
+          conditional(Spy)(False)
+        }),
+      )
+    }
+
+    def test(): Try[Vector[String]] = {
+      Tests.Tests.foldLeft(Success(Vector.empty): Try[Vector[String]]){ (resTry, test) ⇒
+        resTry flatMap { res ⇒
+          test.run() map { r ⇒
+            res :+ r
+          }
+        }
+      }
+    }
+  }
+
   trait SuperFunctionalTemplate extends AnyRef
     with SuperFunctionalFunctionDecorations
     with SuperFunctionalConditionDecorations
+    with SuperFunctionalTesting
   {
     final type S = symbols.Symbol
     final type Set[T] = scala.collection.immutable.ListSet[T]
@@ -266,7 +329,7 @@ final case class Generation(
     //
     type State <: StateLike
     type StateCompanion <: StateCompanionLike
-    type StateModCompanion <: StateModBase
+    type StateModCompanion <: StateModCompanionBase
     type ConditionCompanion <: ConditionBase
     val State: StateCompanion
     val StateMod: StateModCompanion
@@ -295,7 +358,7 @@ final case class Generation(
 
     final type StateMod = State ⇒ State
 
-    trait StateModBase {
+    trait StateModCompanionBase {
       final val `0`: StateMod = identity
       final val updateResult: Set.Mod ⇒ StateMod = State.withResult
       final val addSymbol: S ⇒ StateMod = Set.add andThen updateResult
@@ -376,7 +439,7 @@ final case class Generation(
         prod ⇒ _.copy(prod = Some(prod))
     }
 
-    object StateModCompanion extends StateModBase {
+    object StateModCompanion extends StateModCompanionBase {
     }
 
     object ConditionCompanion extends ConditionBase {
