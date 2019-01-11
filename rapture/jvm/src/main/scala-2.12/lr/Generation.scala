@@ -363,7 +363,7 @@ final case class Generation(
     ) extends StateLike
 
 
-    object StateImpl extends StateCompanionLike {
+    object StateCompanionImpl extends StateCompanionLike {
       override val zero: State = StateImpl(
         result = Set.zero,
         symbol = S.zero,
@@ -384,8 +384,8 @@ final case class Generation(
     }
 
     override type State = StateImpl
-    override type StateCompanion = StateImpl.type
-    override val State: StateCompanion = StateImpl
+    override type StateCompanion = StateCompanionImpl.type
+    override val State: StateCompanion = StateCompanionImpl
     override type StateModCompanion = StateModCompanion.type
     override val StateMod: StateModCompanion = StateModCompanion
     override type ConditionCompanion = ConditionCompanion.type
@@ -426,13 +426,14 @@ final case class Generation(
       // if A := Y... add first(Y) to first(A)
       // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
       val ifExpNonEmpty: StateMod =
-        iff(not(isExpEmpty) && not(isSelf)) {
-          foreachOpt(_.prod map (_.expansion.value)) {
+        iff(/*not(isExpEmpty) && */not(isSelf)) {
+          iff(_ ⇒ true)(foreachOpt(_.prod map (_.expansion.value)) {
             expSym ⇒
               // if A := Y... add first(Y) to first(A)
-              recurse(expSym)
+//              recurse(expSym) >>
+                StateMod.addSymbol(symbols.Terminal.EOS)
               // TODO continue
-          }
+          })
         }
 
       iff(not(isTerminal)) {
