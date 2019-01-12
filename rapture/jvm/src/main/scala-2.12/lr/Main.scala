@@ -32,7 +32,7 @@ object Main {
     println(s6)
 
     Seq(
-      g,
+//      g,
       Generation(Grammars.Example2)
     )
       .foreach { g ⇒

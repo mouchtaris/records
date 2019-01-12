@@ -739,27 +739,59 @@ final case class Generation(
           case Production(prodSym, Expansion(exp)) ⇒
             foreach(_ ⇒ exp) {
               expSym ⇒
-                val firsts: Set[S] = First(expSym)
-                val firstsPure: Set[S] = firsts - ε
-                val hasEmptyVal: Boolean = firsts contains ε
+                state ⇒
+                  val firsts: Set[S] = First(expSym)
+                  val firstsPure: Set[S] = firsts - ε
+                  val hasEmptyVal: Boolean = firsts contains ε
 
-                val isRelevant: Condition = _.prevExpSymOpt exists (_ == expSym)
-                val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
+                  val isRelevant: Condition = state ⇒ state.prevExpSymOpt contains state.symbol
+                  val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
 
-                val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
-                val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                  val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
+                  val addFollowA: State.Mod = StateMod.recurse(prodSym)
 
-                iff(isRelevant) {
-                  addFirstsPure >> iff(hasEmpty)(addFollowA)
-                } >>
-                  State.withPrevExpSym(expSym)
+                  val total = iff(isRelevant) {
+                    addFirstsPure >> iff(hasEmpty)(addFollowA)
+                  } >>
+                    State.withPrevExpSym(expSym)
+
+
+                  val __isrelevant = state.prevExpSymOpt contains state.symbol
+                  val s3: State = if (__isrelevant) {
+                    val s1: State = addFirstsPure(state)
+                    val s2: State = if (hasEmptyVal) {
+                      addFollowA(s1)
+                    }
+                    else {
+                      s1
+                    }
+                    s2
+                  }
+                  else
+                    state
+                  val s4 = State.withPrevExpSym(expSym)(s3)
+
+                  assert(total(state) == s4)
+                  s4
             } >>
             usingOpt(_.prevExpSymOpt) { expSymLast ⇒
-              val isRelevant: Condition = _.symbol == expSymLast
-              val addFollowA: State.Mod = StateMod.recurse(prodSym)
-              iff(isRelevant) {
-                addFollowA
-              }
+              state ⇒
+                val isRelevant: Condition = _.symbol == expSymLast
+                val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                val total = iff(isRelevant) {
+                  addFollowA
+                }
+
+                val __isrelevant = state.symbol == expSymLast
+                val s1 = if (__isrelevant) {
+                  val s2 = addFollowA(state)
+                  s2
+                }
+                else
+                  state
+
+                assert(total(state) == s1)
+                s1
             }
         }
       }
