@@ -485,13 +485,19 @@ final case class Generation(
       final val recurse: S ⇒ State.Mod =
         s ⇒
           iff(Condition.not(Condition.isRecursing(s))) {
-            val fix =
-              State.withSymbol(s) >>
-                using(_.recursing) { recursing ⇒
-                  State.withRecursing(Set.add(s) >> Set.addAll(recursing))
-                }
-            val result: Set[S] = SuperFunctionalTemplate.this.apply(fix).result
-            addSymbols(result)
+            state ⇒ // IMPORTANT
+              // Make the evaluation of the recursion body "lazy" by delaying
+              // evaluation when the complete mod is called.
+              // Otherwise, recursion is evaluated too eagerly, despite the
+              // stop condition in "not(isRecursing(s))", because the body
+              // is evaluated EITHERWAY (eagerly).
+              val fix =
+                State.withSymbol(s) >>
+                  using(_.recursing) { recursing ⇒
+                    State.withRecursing(Set.add(s) >> Set.addAll(recursing))
+                  }
+              val result: Set[S] = SuperFunctionalTemplate.this.apply(fix).result
+              addSymbols(result)(state)
           }
     }
 
