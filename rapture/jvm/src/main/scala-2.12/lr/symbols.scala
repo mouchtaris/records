@@ -14,7 +14,11 @@ object symbols {
 
     final case object z extends Terminal
 
-    final case object e extends Terminal
+    final case object `+` extends Terminal
+
+    final case object `*` extends Terminal
+
+    final case object id extends Terminal
 
     final case object EOS extends Terminal
 
@@ -29,6 +33,10 @@ object symbols {
     final case object S extends NonTerminal
 
     final case object E extends NonTerminal
+
+    final case object `<expr>` extends NonTerminal
+    final case object `<term>` extends NonTerminal
+    final case object `<factor>` extends NonTerminal
 
   }
 

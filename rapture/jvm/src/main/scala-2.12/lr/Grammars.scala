@@ -17,4 +17,16 @@ object Grammars {
 
   val Example: Grammar = ExampleProductions
 
+  val Example2: Grammar = Grammar.makeProductions(
+    `<goal>` → Seq(`<expr>`),
+
+    `<expr>` → Seq(`<term>`, `+`, `<expr>`),
+    `<expr>` → Seq(`<term>`),
+
+    `<term>` → Seq(`<factor>`, `*`, `<term>`),
+    `<term>` → Seq(`<factor>`),
+
+    `<factor>` → Seq(`id`)
+  )
+
 }

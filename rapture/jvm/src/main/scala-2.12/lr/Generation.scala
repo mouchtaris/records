@@ -729,33 +729,42 @@ final case class Generation(
 
     // if A := aBb then { First(b) - ε } in Follow(B)
     // if A := aBb and ε in First(b) then Follow(A) in Follow(B)
-    override val masterMod: State.Mod = {
-      foreach(_ ⇒ grammar.P) {
-        case Production(prodSym, Expansion(exp)) ⇒
-          foreach(_ ⇒ exp) {
-            expSym ⇒
-              val firsts: Set[S] = First(expSym)
-              val firstsPure: Set[S] = firsts - ε
-              val hasEmptyVal: Boolean = firsts contains ε
+    // if A := aB then Follow(A) in Follow(B)
+    override val masterMod: State.Mod =
+    iff(_.symbol == symbols.NonTerminal.`<goal>`) {
+      StateMod.addSymbol(symbols.Terminal.EOS)
+    } >>
+      iff(_.symbol.isInstanceOf[symbols.NonTerminal]) {
+        foreach(_ ⇒ grammar.P) {
+          case Production(prodSym, Expansion(exp)) ⇒
+            foreach(_ ⇒ exp) {
+              expSym ⇒
+                val firsts: Set[S] = First(expSym)
+                val firstsPure: Set[S] = firsts - ε
+                val hasEmptyVal: Boolean = firsts contains ε
 
-              val isRelevant: Condition = _.prevExpSymOpt exists (_ == expSym)
-              val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
+                val isRelevant: Condition = _.prevExpSymOpt exists (_ == expSym)
+                val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
 
-              val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
-              val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
+                val addFollowA: State.Mod = StateMod.recurse(prodSym)
 
-              val total =
                 iff(isRelevant) {
-                  addFirstsPure >>
-                    iff(hasEmpty)(addFollowA)
+                  addFirstsPure >> iff(hasEmpty)(addFollowA)
                 } >>
                   State.withPrevExpSym(expSym)
-
-              total
-          }
+            } >>
+            usingOpt(_.prevExpSymOpt) { expSymLast ⇒
+              val isRelevant: Condition = _.symbol == expSymLast
+              val addFollowA: State.Mod = StateMod.recurse(prodSym)
+              iff(isRelevant) {
+                addFollowA
+              }
+            }
+        }
       }
-    }
   }
+
 
   //
   // Make an initial state from the given symbol
