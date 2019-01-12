@@ -444,7 +444,7 @@ final case class Generation(
     type State <: StateLike
     type StateCompanion <: StateCompanionLike
     type StateModCompanion <: StateModCompanionBase
-    type ConditionCompanion <: ConditionBase
+    type ConditionCompanion <: ConditionCompanionBase
     val State: StateCompanion
     val StateMod: StateModCompanion
     val Condition: ConditionCompanion
@@ -507,7 +507,7 @@ final case class Generation(
       mod ⇒ cond ⇒
         iff(cond)(mod)
 
-    trait ConditionBase {
+    trait ConditionCompanionBase {
       val not: Condition ⇒ Condition =
         cond ⇒ state ⇒
           !cond(state)
@@ -594,7 +594,7 @@ final case class Generation(
     object StateModCompanion extends StateModCompanionBase {
     }
 
-    object ConditionCompanion extends ConditionBase {
+    object ConditionCompanion extends ConditionCompanionBase {
       val isTerminal: Condition = _.symbol.isInstanceOf[symbols.Terminal]
       val isExpEmpty: Condition = _.prodOpt exists (_.expansion.value.isEmpty)
       val isSelf: S ⇒ Condition =
@@ -682,7 +682,47 @@ final case class Generation(
   //
   // Follow(A) -- terminals that can legally follow non-terminal A
   //
-  object Follow {
+  final object Follow extends SuperFunctionalTemplate {
+    case class StateImpl(
+      override val result: Set[S] = Set.zero,
+      override val symbol: S = S.zero,
+      override val recursing: Set[S] = Set.zero,
+    ) extends StateLike
+    override type State = StateImpl
+
+    case object StateCompanionImpl extends StateCompanionLike {
+      override val zero: State =
+        StateImpl()
+      override val withResult: Set.Mod ⇒ State.Mod =
+        mod ⇒ state ⇒
+          state.copy(result = mod(state.result))
+      override val withSymbol: S ⇒ State.Mod =
+        s ⇒
+          _.copy(symbol = s)
+      override val withRecursing: Set.Mod ⇒ State.Mod =
+        mod ⇒ state ⇒
+          state.copy(recursing = mod(state.recursing))
+    }
+    override type StateCompanion = StateCompanionImpl.type
+    override val State: StateCompanion = StateCompanionImpl
+
+    case object StateModCompanionImpl extends StateModCompanionBase
+    override type StateModCompanion = StateModCompanionImpl.type
+    override val StateMod: StateModCompanion = StateModCompanionImpl
+
+    case object ConditionCompanionImpl extends ConditionCompanionBase
+    override type ConditionCompanion = ConditionCompanionImpl.type
+    override val Condition: ConditionCompanion = ConditionCompanionImpl
+
+    override def tests: Tests.Tests = Vector.empty
+
+    override val masterMod: State.Mod = StateMod.`0`
+  }
+
+  //
+  // Follow(A) -- terminals that can legally follow non-terminal A
+  //
+  object Follow2 {
     import symbols.{ Symbol ⇒ S }
     import scala.collection.immutable.{ ListSet ⇒ Set }
 
