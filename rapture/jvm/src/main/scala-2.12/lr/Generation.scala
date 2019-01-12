@@ -232,6 +232,7 @@ final case class Generation(
       def self: A ⇒ B
 
       final def >>[C](other: B ⇒ C): A ⇒ C = self andThen other
+      final def >>:(other: A): B = self(other)
       final def <<[C](other: C ⇒ A): C ⇒ B = other andThen self
       final def iff[C](other: C ⇒ A): C ⇒ B = self << other
 
@@ -311,8 +312,8 @@ final case class Generation(
       // Helper mods
       val True: Condition = _ ⇒ true
       val False: Condition = _ ⇒ false
-      val Spy: StateMod = StateMod.addEmpty
-      val SpiedWith: StateMod ⇒ Stage ⇒ Boolean = fix ⇒ test ⇒ (fix >> test(Spy) >> (_.result.nonEmpty))(State.zero)
+      val Spy: State.Mod = StateMod.addEmpty
+      val SpiedWith: State.Mod ⇒ Stage ⇒ Boolean = fix ⇒ test ⇒ (fix >> test(Spy) >> (_.result.nonEmpty))(State.zero)
       val Spied: Stage ⇒ Boolean = SpiedWith(StateMod.`0`)
 
       type Tests = Vector[ClosedTest[_]]
@@ -402,9 +403,9 @@ final case class Generation(
 
       val isSelfCond: Condition = Condition.isSelf(s1)
 
-      val isNotSelf: StateMod =
+      val isNotSelf: State.Mod =
         State.withProduction(sProduction(s2))
-      val isSelf: StateMod =
+      val isSelf: State.Mod =
         State.withProduction(sProduction(s1))
     }
 
@@ -450,71 +451,88 @@ final case class Generation(
     trait StateLike {
       val result: Set[S]
       val symbol: S
+      val recursing: Set[S]
     }
     trait StateCompanionLike {
-      val withResult: Set.Mod ⇒ StateMod
-      val withSymbol: S ⇒ StateMod
+      final type Mod = State ⇒ State
+      val withResult: Set.Mod ⇒ Mod
+      val withSymbol: S ⇒ Mod
+      val withRecursing: Set.Mod ⇒ Mod
       val zero: State
     }
-    val mod: StateMod // MasterMod
+    val masterMod: State.Mod // MasterMod
 
-    object Set {
+    final object Set {
       type Mod = Set[S] ⇒ Set[S]
       val zero: Set[S] = ListSet.empty
       val add: S ⇒ Mod = s ⇒ _ + s
       val addAll: GenTraversableOnce[S] ⇒ Mod = s ⇒ _ ++ s
     }
 
-    object S {
+    final object S {
       val zero: S = symbols.Terminal.EOS
     }
 
-    final type StateMod = State ⇒ State
-    final type Stage = StateMod ⇒ StateMod
+    final type Stage = State.Mod ⇒ State.Mod
 
     trait StateModCompanionBase {
-      final val `0`: StateMod = identity
-      final val updateResult: Set.Mod ⇒ StateMod = State.withResult
-      final val addSymbol: S ⇒ StateMod = Set.add andThen updateResult
-      final val addSymbols: GenTraversableOnce[S] ⇒ StateMod = Set.addAll andThen updateResult
-      final val addSelf: StateMod = using(_.symbol)(addSymbol)
-      final val addEmpty: StateMod = addSymbol(ε)
-      final val recurse: S ⇒ StateMod =
+      final val `0`: State.Mod = identity
+      final val updateResult: Set.Mod ⇒ State.Mod = State.withResult
+      final val addSymbol: S ⇒ State.Mod = Set.add andThen updateResult
+      final val addSymbols: GenTraversableOnce[S] ⇒ State.Mod = Set.addAll andThen updateResult
+      final val addSelf: State.Mod = using(_.symbol)(addSymbol)
+      final val addEmpty: State.Mod = addSymbol(ε)
+      final val recurse: S ⇒ State.Mod =
         s ⇒
-          updateResult(Set.addAll(mod(State.withSymbol(s)(State.zero)).result))
+          iff(Condition.not(Condition.isRecursing(s))) {
+            val fix =
+              State.withSymbol(s) >>
+                using(_.recursing) { recursing ⇒
+                  State.withRecursing(Set.add(s) >> Set.addAll(recursing))
+                }
+            val result: Set[S] = SuperFunctionalTemplate.this.apply(fix).result
+            addSymbols(result)
+          }
     }
 
     final type Condition = State ⇒ Boolean
-    final val iff: Condition ⇒ StateMod ⇒ StateMod =
+    final val iff: Condition ⇒ State.Mod ⇒ State.Mod =
       cond ⇒ mod ⇒ state ⇒
         if (cond(state)) mod(state) else state
-    final val conditional: StateMod ⇒ Condition ⇒ StateMod =
+    final val conditional: State.Mod ⇒ Condition ⇒ State.Mod =
       mod ⇒ cond ⇒
         iff(cond)(mod)
 
     trait ConditionBase {
       val not: Condition ⇒ Condition =
-        cond ⇒ state ⇒ !cond(state)
+        cond ⇒ state ⇒
+          !cond(state)
       val and: Condition ⇒ Condition ⇒ Condition =
-        condA ⇒ condB ⇒ state ⇒ condA(state) && condB(state)
+        condA ⇒ condB ⇒ state ⇒
+          condA(state) && condB(state)
       def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
-        obj ⇒ _ ⇒ f(obj)
+        obj ⇒ _ ⇒
+          f(obj)
+
+      val isRecursing: S ⇒ Condition =
+        sym ⇒ state ⇒
+          state.recursing.contains(sym)
     }
 
     // (t => m) => m
     // ((t => m) => m).map(t => u) => (u => m) => m
-    final def usingOpt[T]: (State ⇒ Option[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+    final def usingOpt[T]: (State ⇒ Option[T]) ⇒ (T ⇒ State.Mod) ⇒ State.Mod =
       access ⇒ mod ⇒ state ⇒
         access(state)
           .map { obj ⇒ mod(obj) }
           .getOrElse(StateMod.`0`)
           .apply(state)
 
-    final def using[T]: (State ⇒ T) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+    final def using[T]: (State ⇒ T) ⇒ (T ⇒ State.Mod) ⇒ State.Mod =
       access ⇒
         usingOpt(s ⇒ Some(access(s)))
 
-    final def foreachOpt[T]: (State ⇒ Option[Iterable[T]]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+    final def foreachOpt[T]: (State ⇒ Option[Iterable[T]]) ⇒ (T ⇒ State.Mod) ⇒ State.Mod =
       iter ⇒ toMod ⇒ state ⇒ {
         val mod = iter(state)
           .map(_.foldLeft(StateMod.`0`) { (mod, t) ⇒ mod >> toMod(t) })
@@ -522,9 +540,12 @@ final case class Generation(
         mod(state)
       }
 
-    final def foreach[T]: (State ⇒ Iterable[T]) ⇒ (T ⇒ StateMod) ⇒ StateMod =
+    final def foreach[T]: (State ⇒ Iterable[T]) ⇒ (T ⇒ State.Mod) ⇒ State.Mod =
       iter ⇒
         foreachOpt(s ⇒ Some(iter(s)))
+
+    final def apply(fix: State.Mod): State =
+      (fix >> masterMod)(State.zero)
   }
 
   //
@@ -540,7 +561,8 @@ final case class Generation(
     final case class StateImpl(
       override val symbol: S,
       override val result: Set[S],
-      prod: Option[Production] = None, // current production when iterating productions
+      override val recursing: Set[S],
+      prodOpt: Option[Production] = None, // current production when iterating productions
       prevHasEmpty: Boolean = true, // previous production has ε when iterating productions
     ) extends StateLike
 
@@ -549,16 +571,20 @@ final case class Generation(
       override val zero: State = StateImpl(
         result = Set.zero,
         symbol = S.zero,
+        recursing = Set.zero,
       )
-      override val withResult: Set.Mod ⇒ StateMod =
+      override val withResult: Set.Mod ⇒ State.Mod =
         mod ⇒ state ⇒
           state.copy(result = mod(state.result))
-      override val withSymbol: S ⇒ StateMod =
+      override val withSymbol: S ⇒ State.Mod =
         s ⇒
           _.copy(symbol = s)
-      val withProduction: Production ⇒ StateMod =
+      override val withRecursing: Set.Mod ⇒ State.Mod =
+        mod ⇒ state ⇒
+          state.copy(recursing = mod(state.recursing))
+      val withProduction: Production ⇒ State.Mod =
         prod ⇒
-          _.copy(prod = Some(prod))
+          _.copy(prodOpt = Some(prod))
     }
 
     object StateModCompanion extends StateModCompanionBase {
@@ -566,10 +592,11 @@ final case class Generation(
 
     object ConditionCompanion extends ConditionBase {
       val isTerminal: Condition = _.symbol.isInstanceOf[symbols.Terminal]
-      val isExpEmpty: Condition = _.prod exists (_.expansion.value.isEmpty)
+      val isExpEmpty: Condition = _.prodOpt exists (_.expansion.value.isEmpty)
       val isSelf: S ⇒ Condition =
         s ⇒ state ⇒
-          state.prod exists (_.symbol == s)
+          state.prodOpt exists (_.symbol == s)
+      val prevHasEmpty: Condition = _.prevHasEmpty
     }
 
     override type State = StateImpl
@@ -582,7 +609,7 @@ final case class Generation(
 
     import StateMod.`0`
 
-    val ifTerminal: StateMod = {
+    val ifTerminal: State.Mod = {
       import Condition.isTerminal
       import StateMod.addSelf
 
@@ -592,35 +619,35 @@ final case class Generation(
     // if A := ε add ε to first(A)
     // if A =: Y... add first(Y) to first(A)
     // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
-    val ifNotTerminal: StateMod = {
+    val ifNotTerminal: State.Mod = {
       import
         Condition.{
           isTerminal,
           not,
           isExpEmpty,
           isSelf,
+          prevHasEmpty,
         },
         StateMod.{
           addEmpty,
+          recurse,
         }
 
       // if A := ε add ε to first(A)
-      val ifExpEmpty: StateMod =
+      val ifExpEmpty: State.Mod =
         iff(isExpEmpty) {
           addEmpty
         }
 
-      // skipping self...
-
       // if A := Y... add first(Y) to first(A)
       // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
-      val ifExpNonEmpty: StateMod =
+      val ifExpNonEmpty: State.Mod =
         iff(not(isExpEmpty)) {
-          foreachOpt(_.prod map (_.expansion.value)) {
+          foreachOpt(_.prodOpt map (_.expansion.value)) {
             expSym ⇒
-              // if A := Y... add first(Y) to first(A)
-//              recurse(expSym) >>
-              // TODO continue
+              iff(not(isSelf(expSym)) && prevHasEmpty) {
+                recurse(expSym)
+              }
           }
         }
 
@@ -636,7 +663,7 @@ final case class Generation(
       }
     }
 
-    override val mod: StateMod = {
+    override val masterMod: State.Mod = {
       `0` >>
         ifTerminal >>
         ifNotTerminal >>
@@ -644,7 +671,7 @@ final case class Generation(
     }
 
     def apply(sym: S): Set[S] =
-      mod(State.withSymbol(sym)(State.zero)).result
+      masterMod(State.withSymbol(sym)(State.zero)).result
   }
   def first(s: symbols.Symbol): ListSet[symbols.Symbol] = First(s)
   def first2(
