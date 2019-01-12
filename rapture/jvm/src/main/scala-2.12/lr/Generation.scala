@@ -514,9 +514,12 @@ final case class Generation(
       val and: Condition ⇒ Condition ⇒ Condition =
         condA ⇒ condB ⇒ state ⇒
           condA(state) && condB(state)
+      def fromBoolean: Boolean ⇒ Condition =
+        result ⇒ _ ⇒
+          result
       def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
-        obj ⇒ _ ⇒
-          f(obj)
+        obj ⇒
+          fromBoolean(f(obj))
 
       val isRecursing: S ⇒ Condition =
         sym ⇒ state ⇒
@@ -550,6 +553,9 @@ final case class Generation(
 
     final def apply(fix: State.Mod): State =
       (fix >> masterMod)(State.zero)
+
+    final def apply(sym: S): Set[S] =
+      masterMod(State.withSymbol(sym)(State.zero)).result
   }
 
   //
@@ -673,21 +679,20 @@ final case class Generation(
         ifNotTerminal >>
         `0`
     }
-
-    def apply(sym: S): Set[S] =
-      masterMod(State.withSymbol(sym)(State.zero)).result
   }
-  def first(s: symbols.Symbol): ListSet[symbols.Symbol] = First(s)
 
   //
   // Follow(A) -- terminals that can legally follow non-terminal A
   //
   final object Follow extends SuperFunctionalTemplate {
+
     case class StateImpl(
       override val result: Set[S] = Set.zero,
       override val symbol: S = S.zero,
       override val recursing: Set[S] = Set.zero,
+      prevExpSymOpt: Option[S] = None
     ) extends StateLike
+
     override type State = StateImpl
 
     case object StateCompanionImpl extends StateCompanionLike {
@@ -702,153 +707,55 @@ final case class Generation(
       override val withRecursing: Set.Mod ⇒ State.Mod =
         mod ⇒ state ⇒
           state.copy(recursing = mod(state.recursing))
+      val withPrevExpSym: S ⇒ State.Mod =
+        s ⇒
+          _.copy(prevExpSymOpt = Some(s))
     }
+
     override type StateCompanion = StateCompanionImpl.type
     override val State: StateCompanion = StateCompanionImpl
 
     case object StateModCompanionImpl extends StateModCompanionBase
+
     override type StateModCompanion = StateModCompanionImpl.type
     override val StateMod: StateModCompanion = StateModCompanionImpl
 
     case object ConditionCompanionImpl extends ConditionCompanionBase
+
     override type ConditionCompanion = ConditionCompanionImpl.type
     override val Condition: ConditionCompanion = ConditionCompanionImpl
 
     override def tests: Tests.Tests = Vector.empty
 
-    override val masterMod: State.Mod = StateMod.`0`
-  }
+    // if A := aBb then { First(b) - ε } in Follow(B)
+    // if A := aBb and ε in First(b) then Follow(A) in Follow(B)
+    override val masterMod: State.Mod = {
+      foreach(_ ⇒ grammar.P) {
+        case Production(prodSym, Expansion(exp)) ⇒
+          foreach(_ ⇒ exp) {
+            expSym ⇒
+              val firsts: Set[S] = First(expSym)
+              val firstsPure: Set[S] = firsts - ε
+              val hasEmptyVal: Boolean = firsts contains ε
 
-  //
-  // Follow(A) -- terminals that can legally follow non-terminal A
-  //
-  object Follow2 {
-    import symbols.{ Symbol ⇒ S }
-    import scala.collection.immutable.{ ListSet ⇒ Set }
+              val isRelevant: Condition = _.prevExpSymOpt exists (_ == expSym)
+              val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
 
-    final type Follow = Set[S]
-    object Follow {
-      val empty: Follow =
-        Set.empty
+              val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
+              val addFollowA: State.Mod = StateMod.recurse(prodSym)
 
-      type Mod =
-        Follow ⇒ Follow
+              val total =
+                iff(isRelevant) {
+                  addFirstsPure >>
+                    iff(hasEmpty)(addFollowA)
+                } >>
+                  State.withPrevExpSym(expSym)
 
-      val add: S ⇒ Mod =
-        s ⇒
-          _ + s
-
-      val addAll: Traversable[S] ⇒ Mod =
-        s ⇒
-          _ ++ s
-    }
-
-    final type Follows = Map[S, Follow]
-    object Follows {
-      val zero: Follows = Map.empty
-
-      type Access = Follows ⇒ Follow
-
-      val get: S ⇒ Access =
-        s ⇒
-          _.getOrElse(s, Follow.empty)
-
-
-      type Mod = Follows ⇒ Follows
-      object Mod {
-        val noop: Mod = identity
-        val zero: Mod = noop
-      }
-
-      val update: S ⇒ Follow.Mod ⇒ Mod =
-        s ⇒ mod ⇒ self ⇒
-          self.updated(s, mod(get(s)(self)))
-    }
-
-    final case class State(
-      mod: Follows.Mod,
-      prevExpSym: Option[S],
-    )
-    object State {
-      val zero = State(
-        mod = Follows.Mod.zero,
-        prevExpSym = None,
-      )
-      //
-      // Mod
-      //
-      type Mod = State ⇒ State
-      val addMod: Follows.Mod ⇒ Mod =
-        mod ⇒ state ⇒
-          state.copy(mod = state.mod.andThen(mod))
-
-      //
-      // Pred
-      //
-      type Pred = State ⇒ Boolean
-      val conditional: Pred ⇒ Mod ⇒ Mod =
-        pred ⇒ mod ⇒ state ⇒
-          if (pred(state)) mod(state) else state
-
-      //
-      // Accessors
-      //
-      def using[T]: (State ⇒ T) ⇒ (T ⇒ Mod) ⇒ Mod =
-        access ⇒ mod ⇒ state ⇒
-          mod(access(state))(state)
-      def usingOpt[T]: (State ⇒ Option[T]) ⇒ (T ⇒ Mod) ⇒ Mod =
-        access ⇒ mod ⇒ state ⇒
-          access(state)
-            .map(obj ⇒ mod(obj)(state))
-            .getOrElse(state)
-
-      //
-      // Facades
-      //
-      object Pred {
-        val hasPrevExpSym: Pred = _.prevExpSym.isDefined
-      }
-      object Mod {
-        val addPlain: S ⇒ S ⇒ Mod =
-          s ⇒ f ⇒ addMod(
-            Follows.update(s)(Follow.add(f))
-          )
-        // if A := aBb then { First(b) - ε } in Follow(B)
-        // if A := aBb and ε in First(b) then Follow(A) in Follow(B)
-        val addFirstOfTo: S ⇒ S ⇒ Mod =
-          of ⇒ to ⇒ {
-            val firstOf: Set[S] = first(of)
-            val hasEmpty: Boolean = firstOf.contains(ε)
-            val firstOfPure: Set[S] = firstOf - ε
-            val mod1: Follows.Mod = Follows.update(to)(Follow.addAll(firstOfPure))
-            val mod2: Follows.Mod = if (hasEmpty) ??? else Follows.Mod.noop
-            addMod( mod1 andThen mod2 )
+              total
           }
       }
     }
-
-    def follows: S ⇒ Set[S] = {
-      import symbols.Terminal.EOS
-      import symbols.NonTerminal.`<goal>`
-      import State.Mod.addFirstOfTo
-      import State.Mod.addPlain
-      import State.usingOpt
-
-      val smod0 = addPlain(`<goal>`)(EOS)
-
-      grammar.P.foldLeft(smod0) {
-        case (smod, Production(prodSym, Expansion(prodExp))) ⇒
-          prodExp.foldLeft(smod) {
-            case (smod, prodSym) ⇒
-              val smod1 = usingOpt(_.prevExpSym)(addFirstOfTo(prodSym))
-              smod andThen smod1
-          }
-      }
-      ???
-    }
-
   }
-
 
   //
   // Make an initial state from the given symbol

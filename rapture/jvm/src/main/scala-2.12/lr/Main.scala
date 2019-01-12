@@ -31,12 +31,20 @@ object Main {
     val s6 = g next s5
     println(s6)
 
-    g.grammar.symbolTable.keys.map(s ⇒ (s, g.first(s))).foreach {
-      case (s, first) ⇒
-        println(s"FIRST($s) = $first")
-    }
     println {
       g.First.Tests.runReport(g.First.tests)
+    }
+    g.grammar.symbolTable.keys
+      .map {
+        s ⇒
+          (
+            s,
+            g.First(s),
+            g.Follow(s),
+          )
+      }.foreach {
+      case (s, first, follow) ⇒
+        println(s"FIRST($s) = $first | FOLLOW($s) = $follow")
     }
   }
 
