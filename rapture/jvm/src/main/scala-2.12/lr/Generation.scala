@@ -279,10 +279,13 @@ final case class Generation(
 
     object Tests {
       type Result = Try[String]
+
       object Result {
         val `0`: Result = Success("<no tests>")
       }
+
       final case class ResultEv[R](toResult: Test[R] ⇒ Result)
+
       object ResultEv {
         implicit def fromBool: ResultEv[Boolean] = ResultEv {
           test ⇒
@@ -294,76 +297,93 @@ final case class Generation(
       }
 
       final case class Test[R](name: String, run: () ⇒ R)
+
       final case class ClosedTest[R](test: Test[R], resultEv: ResultEv[R]) {
         def run(): Result =
           resultEv.toResult(test)
       }
+
       object ClosedTest {
         implicit def fromTest[R: ResultEv](test: Test[R]): ClosedTest[R] =
           ClosedTest(test, implicitly)
       }
+
       // Helper mods
       val True: Condition = _ ⇒ true
       val False: Condition = _ ⇒ false
       val Spy: StateMod = StateMod.addEmpty
-      val SpyTakenWith: StateMod ⇒ StateMod ⇒ Boolean = mod ⇒ _(State.zero).result.nonEmpty
-      val SpyTaken: StateMod ⇒ Boolean = SpyTakenWith(StateMod.`0`)
+      val SpiedWith: StateMod ⇒ Stage ⇒ Boolean = fix ⇒ test ⇒ (fix >> test(Spy) >> (_.result.nonEmpty))(State.zero)
+      val Spied: Stage ⇒ Boolean = SpiedWith(StateMod.`0`)
 
-      val BaseTests: Vector[ClosedTest[_]] = Vector(
-        Test("iff true always taken", () ⇒ SpyTaken {
-          iff(True)(Spy)
+      type Tests = Vector[ClosedTest[_]]
+      val BaseTests: Tests = Vector(
+        Test("iff true always taken", () ⇒ Spied {
+          iff(True)
         }),
-        Test("iff false never taken", () ⇒ !SpyTaken {
-          iff(False)(Spy)
+        Test("iff false never taken", () ⇒ !Spied {
+          iff(False)
         }),
-        Test("conditional true always taken", () ⇒ SpyTaken {
-          conditional(Spy)(True)
+        Test("conditional true always taken", () ⇒ Spied {
+          spy ⇒ conditional(spy)(True)
         }),
-        Test("conditional false never taken", () ⇒ !SpyTaken {
-          conditional(Spy)(False)
+        Test("conditional false never taken", () ⇒ !Spied {
+          conditional(_)(False)
         }),
-        Test("not iff true never taken", () ⇒ !SpyTaken {
-          iff(Condition.not(True))(Spy)
+        Test("not iff true never taken", () ⇒ !Spied {
+          iff(Condition.not(True))
         }),
-        Test("not iff false always taken", () ⇒ SpyTaken {
-          iff(Condition.not(False))(Spy)
+        Test("not iff false always taken", () ⇒ Spied {
+          iff(Condition.not(False))
         }),
-        Test("conditional not true never taken", () ⇒ !SpyTaken {
-          conditional(Spy)(Condition.not(True))
+        Test("conditional not true never taken", () ⇒ !Spied {
+          conditional(_)(Condition.not(True))
         }),
-        Test("conditional not false always taken", () ⇒ SpyTaken {
-          conditional(Spy)(Condition.not(False))
+        Test("conditional not false always taken", () ⇒ Spied {
+          conditional(_)(Condition.not(False))
         }),
-        Test("iff true and true taken", () ⇒ SpyTaken {
-          iff(True && True)(Spy)
+        Test("iff true and true taken", () ⇒ Spied {
+          iff(True && True)
         }),
-        Test("iff true and false not taken", () ⇒ !SpyTaken {
-          iff(True && False)(Spy)
+        Test("iff true and false not taken", () ⇒ !Spied {
+          iff(True && False)
         }),
-        Test("iff false and true not taken", () ⇒ !SpyTaken {
-          iff(False && True)(Spy)
+        Test("iff false and true not taken", () ⇒ !Spied {
+          iff(False && True)
         }),
-        Test("reading => true taken", () ⇒ SpyTaken {
-          iff(Condition.reading[Unit](_ ⇒ true)(()))(Spy)
+        Test("reading => true taken", () ⇒ Spied {
+          iff(Condition.reading[Unit](_ ⇒ true)(()))
         }),
-        Test("reading => false not taken", () ⇒ !SpyTaken {
-          iff(Condition.reading[Unit](_ ⇒ false)(()))(Spy)
+        Test("reading => false not taken", () ⇒ !Spied {
+          iff(Condition.reading[Unit](_ ⇒ false)(()))
         }),
       )
-    }
+      type TestsResults = Try[Vector[String]]
 
-    def tests: Vector[Tests.ClosedTest[_]]
+      object TestsResults {
+        val zero: TestsResults = Success(Vector.empty)
+      }
 
-    def test(): Try[Vector[String]] = {
-      (Tests.BaseTests ++ tests)
-        .foldLeft(Success(Vector.empty): Try[Vector[String]]) { (resTry, test) ⇒
-          resTry flatMap { res ⇒
-            test.run() map { r ⇒
-              res :+ r
-            }
+      val run: Tests ⇒ TestsResults = {
+        val appendTo: Vector[String] ⇒ String ⇒ Vector[String] = v ⇒ s ⇒ v :+ s
+        _
+          .foldLeft(Tests.TestsResults.zero) { (resTry, test) ⇒
+            resTry flatMap { appendTo >> test.run().map }
           }
-        }
+      }
+
+      val report: TestsResults ⇒ String =
+        _
+          .map(_.map(o ⇒ s"OK $o").mkString("\n"))
+          .recover { case ex ⇒ s"FAILED FIRST: $ex" }
+          .get
+
+      val runReport: Tests ⇒ String =
+        run >> report
     }
+
+    def tests: Tests.Tests
+    final def allTests: Tests.Tests =
+      Tests.BaseTests ++ tests
   }
 
   trait FirstTesting {
@@ -376,26 +396,34 @@ final case class Generation(
     private[this] object Fix {
       def sProduction(s: S): Production = Production(s, Seq.empty)
 
-      val isNotSelf: StateMod = {
-        val s1: S = symbols.Terminal.x
-        val s2: S = symbols.Terminal.z
-        assert(s1 != s2 && !s1.equals(s2))
-        State.withProduction(sProduction(s1)) >>
-          State.withSymbol(s2)
-      }
+      val s1: S = symbols.Terminal.x
+      val s2: S = symbols.Terminal.z
+      assert(s1 != s2 && !s1.equals(s2))
+
+      val isSelfCond: Condition = Condition.isSelf(s1)
+
+      val isNotSelf: StateMod =
+        State.withProduction(sProduction(s2))
       val isSelf: StateMod =
-        isNotSelf >> {
-          usingOpt(_.prod)
-            .map.apply { case Production(s, _) ⇒ s }
-            .apply(State.withSymbol)
-        }
+        State.withProduction(sProduction(s1))
     }
 
-    final override def tests: Vector[ClosedTest[_]] = Vector(
-      Test("isSelf", () ⇒ SpyTakenWith(Fix.isSelf) {
-        iff(Condition.isSelf)(Spy)
-      }),
-    )
+    final override def tests: Tests.Tests = {
+      Vector(
+        Test("isSelf", () ⇒ SpiedWith(Fix.isSelf) {
+          iff(Fix.isSelfCond)
+        }),
+        Test("not isSelf", () ⇒ !SpiedWith(Fix.isSelf) {
+          iff(Condition.not(Fix.isSelfCond))
+        }),
+        Test("isNotSelf", () ⇒ !SpiedWith(Fix.isNotSelf) {
+          iff(Fix.isSelfCond)
+        }),
+        Test("not isNotSelf", () ⇒ SpiedWith(Fix.isNotSelf) {
+          iff(Condition.not(Fix.isSelfCond))
+        }),
+      )
+    }
   }
 
   trait SuperFunctionalTemplate extends AnyRef
@@ -442,6 +470,7 @@ final case class Generation(
     }
 
     final type StateMod = State ⇒ State
+    final type Stage = StateMod ⇒ StateMod
 
     trait StateModCompanionBase {
       final val `0`: StateMod = identity
@@ -538,8 +567,9 @@ final case class Generation(
     object ConditionCompanion extends ConditionBase {
       val isTerminal: Condition = _.symbol.isInstanceOf[symbols.Terminal]
       val isExpEmpty: Condition = _.prod exists (_.expansion.value.isEmpty)
-      val isSelf: Condition = state ⇒
-        state.prod exists (_.symbol == state.symbol)
+      val isSelf: S ⇒ Condition =
+        s ⇒ state ⇒
+          state.prod exists (_.symbol == s)
     }
 
     override type State = StateImpl
@@ -563,11 +593,16 @@ final case class Generation(
     // if A =: Y... add first(Y) to first(A)
     // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
     val ifNotTerminal: StateMod = {
-      import Condition.isTerminal
-      import Condition.not
-      import Condition.isExpEmpty
-      import Condition.isSelf
-      import StateMod.addEmpty
+      import
+        Condition.{
+          isTerminal,
+          not,
+          isExpEmpty,
+          isSelf,
+        },
+        StateMod.{
+          addEmpty,
+        }
 
       // if A := ε add ε to first(A)
       val ifExpEmpty: StateMod =
@@ -580,22 +615,21 @@ final case class Generation(
       // if A := Y... add first(Y) to first(A)
       // (if A non term and) if A := Y1Y2... add first(Yi) if ε in first(Yj) for 1 <= j < i
       val ifExpNonEmpty: StateMod =
-        iff(/*not(isExpEmpty) && */not(isSelf)) {
-          iff(_ ⇒ true)(foreachOpt(_.prod map (_.expansion.value)) {
+        iff(not(isExpEmpty)) {
+          foreachOpt(_.prod map (_.expansion.value)) {
             expSym ⇒
               // if A := Y... add first(Y) to first(A)
 //              recurse(expSym) >>
-                StateMod.addSymbol(symbols.Terminal.EOS)
               // TODO continue
-          })
+          }
         }
 
       iff(not(isTerminal)) {
         using(_.symbol) { symbol ⇒
           foreach(_ ⇒ grammar(symbol)) {
             State.withProduction(_) >>
-              ifExpEmpty >>
               ifExpNonEmpty >>
+              ifExpEmpty >>
               `0`
           }
         }
