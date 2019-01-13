@@ -235,6 +235,12 @@ final case class Generation(
       final def >>:(other: A): B = self(other)
       final def <<[C](other: C ⇒ A): C ⇒ B = other andThen self
       final def iff[C](other: C ⇒ A): C ⇒ B = self << other
+      final def log(msg: (A, B) ⇒ Option[String]): A ⇒ B =
+        a ⇒ {
+          val b = self(a)
+          msg(a, b).foreach { msg ⇒ println(s"SuperFunctional: $msg") }
+          b
+        }
 
       final type MapperEvidence[T, R] = (A ⇒ B) <:< ((T ⇒ R) ⇒ R)
       final class Mapper[T, R](
@@ -508,22 +514,25 @@ final case class Generation(
         iff(cond)(mod)
 
     trait ConditionCompanionBase {
-      val not: Condition ⇒ Condition =
+      final val not: Condition ⇒ Condition =
         cond ⇒ state ⇒
           !cond(state)
-      val and: Condition ⇒ Condition ⇒ Condition =
+      final val and: Condition ⇒ Condition ⇒ Condition =
         condA ⇒ condB ⇒ state ⇒
           condA(state) && condB(state)
-      def fromBoolean: Boolean ⇒ Condition =
+      final def fromBoolean: Boolean ⇒ Condition =
         result ⇒ _ ⇒
           result
-      def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
+      final def reading[T](f: T ⇒ Boolean): T ⇒ Condition =
         obj ⇒
           fromBoolean(f(obj))
 
-      val isRecursing: S ⇒ Condition =
+      final val isRecursing: S ⇒ Condition =
         sym ⇒ state ⇒
           state.recursing.contains(sym)
+
+      final def apply(cond: Condition): Condition =
+        cond
     }
 
     // (t => m) => m
@@ -710,6 +719,8 @@ final case class Generation(
       val withPrevExpSym: S ⇒ State.Mod =
         s ⇒
           _.copy(prevExpSymOpt = Some(s))
+      val clearPrevExpSym: State.Mod =
+        _.copy(prevExpSymOpt = None)
     }
 
     override type StateCompanion = StateCompanionImpl.type
@@ -736,63 +747,72 @@ final case class Generation(
     } >>
       iff(_.symbol.isInstanceOf[symbols.NonTerminal]) {
         foreach(_ ⇒ grammar.P) {
-          case Production(prodSym, Expansion(exp)) ⇒
+          case prod@Production(prodSym, Expansion(exp)) ⇒
+
+            class Loggers(extraCtx: String, expSym: S) {
+              def ifLike(msg: State ⇒ String): State ⇒ Option[String] =
+                state ⇒
+                  if (state.symbol == symbols.NonTerminal.`<expr>`)
+                    Some(msg(state))
+                  else
+                    None
+
+              val __ctx: State ⇒ Option[String] =
+                ifLike { state ⇒
+                  s"FIRST(${state.symbol})/[$extraCtx]: in $prod at $expSym (prevsym: ${state.prevExpSymOpt}, sofar: ${state.result}"
+                }
+              val __log: String ⇒ (State, State) ⇒ Option[String] =
+                action ⇒ (s0, s1) ⇒
+                  ifLike { s0 ⇒
+                    s"${__ctx(s0).get}: [$action]: state' -> ${__ctx(s1).get}"
+                  }(s0)
+              val __cond: String ⇒ (State, Boolean) ⇒ Option[String] =
+                action ⇒ (s, b) ⇒
+                  ifLike { s ⇒
+                    s"${__ctx(s).get}: [$action ??]=$b"
+                  }(s)
+            }
             foreach(_ ⇒ exp) {
               expSym ⇒
-                state ⇒
-                  val firsts: Set[S] = First(expSym)
-                  val firstsPure: Set[S] = firsts - ε
-                  val hasEmptyVal: Boolean = firsts contains ε
+                val firsts: Set[S] = First(expSym)
+                val firstsPure: Set[S] = firsts - ε
+                val hasEmptyVal: Boolean = firsts contains ε
 
-                  val isRelevant: Condition = state ⇒ state.prevExpSymOpt contains state.symbol
-                  val addFirstsPure: State.Mod = StateMod.addSymbols(firstsPure)
+                val __loggers = new Loggers("exp.foreach", expSym)
+                import __loggers._
 
-                  val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
-                  val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                val isRelevant: Condition = Condition(state ⇒ state.prevExpSymOpt contains state.symbol)
+                  .log(__cond("isRelevant"))
+                val addFirstsPure: State.Mod =
+                  StateMod.addSymbols(firstsPure)
+                    .log(__log("Adding first of b"))
 
-                  val total = iff(isRelevant) {
-                    addFirstsPure >> iff(hasEmpty)(addFollowA)
-                  } >>
-                    State.withPrevExpSym(expSym)
-
-
-                  val __isrelevant = state.prevExpSymOpt contains state.symbol
-                  val s3: State = if (__isrelevant) {
-                    val s1: State = addFirstsPure(state)
-                    val s2: State = if (hasEmptyVal) {
-                      addFollowA(s1)
-                    }
-                    else {
-                      s1
-                    }
-                    s2
-                  }
-                  else
-                    state
-                  val s4 = State.withPrevExpSym(expSym)(s3)
-
-                  assert(total(state) == s4)
-                  s4
-            } >>
-            usingOpt(_.prevExpSymOpt) { expSymLast ⇒
-              state ⇒
-                val isRelevant: Condition = _.symbol == expSymLast
+                val hasEmpty: Condition = Condition.fromBoolean(hasEmptyVal)
+                  .log(__cond("hasEmpty"))
                 val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                  .log(__log(s"(Recursing) Adding Follow(A = $prodSym)"))
+
+                val total = iff(isRelevant) {
+                  addFirstsPure >> iff(hasEmpty)(addFollowA)
+                } >>
+                  State.withPrevExpSym(expSym)
+                state ⇒ total(state)
+            } >>
+              usingOpt(_.prevExpSymOpt) { expSymLast ⇒
+                val __loggers = new Loggers("lastExp", expSymLast)
+                import __loggers._
+
+                val isRelevant: Condition = Condition(_.symbol == expSymLast)
+                  .log(__cond("isRelevant"))
+                val addFollowA: State.Mod = StateMod.recurse(prodSym)
+                  .log(__log(s"(Recursing) Add Follow(A = $prodSym)"))
+
                 val total = iff(isRelevant) {
                   addFollowA
                 }
-
-                val __isrelevant = state.symbol == expSymLast
-                val s1 = if (__isrelevant) {
-                  val s2 = addFollowA(state)
-                  s2
-                }
-                else
-                  state
-
-                assert(total(state) == s1)
-                s1
-            }
+                state ⇒ total(state)
+              } >>
+              State.clearPrevExpSym
         }
       }
   }
