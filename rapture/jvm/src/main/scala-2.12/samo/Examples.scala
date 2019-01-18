@@ -22,7 +22,7 @@ object Examples {
     import pf.PF
     sealed trait Plus1
     implicit def intPlus1: PF[Plus1, Int, Int] = _ + 1
-    implicit def stringPlus1: PF[Plus1, String, String] = _.toString + "1"
+    implicit def stringPlus1: PF[Plus1, String, String] = _.toString + "lr1"
   }
 
   def use[T](obj: T): Unit = obj
