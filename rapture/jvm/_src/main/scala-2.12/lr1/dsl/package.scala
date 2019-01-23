@@ -66,6 +66,15 @@ package object dsl {
       )
   }
 
+  implicit def prodSeqToGrammar[SP](
+    implicit
+    ev: SP To Seq[adt.Production]
+  ): SP To adt.Grammar =
+    sp ⇒
+      adt.Grammar(
+        productions = ev(sp)
+      )
+
   final implicit class ClosedTo[B](val unit: Unit) extends AnyVal {
     def apply[A](a: A)(implicit ev: A To B): B =
       ev(a)

@@ -42,6 +42,7 @@ object Main {
     import ex0._
     println( P )
     println( to[Set[adt.Production]](P) )
+    println( new algebra.Start()(P) )
   }
 
 }
