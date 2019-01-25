@@ -4,7 +4,7 @@ import
 
 object ScalacSettings {
 
-  val ScalaVersion = "2.12.4"
+  val ScalaVersion = "2.12.8"
 
   val standard = scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
