@@ -1,4 +1,4 @@
-package fn
+package fns
 
 trait TypeClass[S] extends Any {
 

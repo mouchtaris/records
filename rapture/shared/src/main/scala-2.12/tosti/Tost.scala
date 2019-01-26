@@ -4,11 +4,9 @@ import scala.language.existentials
 
 object Tost {
 
-  import fn.list.{::, Nil}
-  import fn.list.appendTo.AppendTo
-  import fn.list.pf.{pf, Compose, Def, Pf}
-  import fn.list.reduce.ReduceDecoration
-  import fn.list.reduce.implicits._
+  import fn.pf.{ Pf, Def, Definition, Compose }
+  import fn.list.{ ::, Nil }
+  import fn.pfs.AppendTo
 
   final implicit class TAsserter[T](val unit: Unit) extends AnyVal {
     def apply[V](v: ⇒ V)(implicit ev: V <:< T): Unit = unit
@@ -35,8 +33,8 @@ object Tost {
 
   object G extends G
 
-  implicit val pfF: Def.Definition[F, A, B] = Def.Definition(_ ⇒ new B {})
-  implicit val pfG: Def.Definition[G, B, C] = Def.Definition(_ ⇒ new C {})
+  implicit val pfF: Definition[F, A, B] = Definition(_ ⇒ new B {})
+  implicit val pfG: Definition[G, B, C] = Definition(_ ⇒ new C {})
 
   // == fn.list.pf.Pf ==
   //
@@ -72,7 +70,7 @@ object Tost {
   ;
   {
     tassert[Pf[F, A] {type Out <: B}] {
-      Def.Definition[F, A, B](_ ⇒ new B {})
+      Def[F, A](_ ⇒ new B {})
     }
   }
 
@@ -82,7 +80,7 @@ object Tost {
   ;
   {
     tassert[B] {
-      pf[F](new A {})
+      Pf[F](new A {})
     }
   }
 
@@ -94,7 +92,7 @@ object Tost {
   {
     type Comp = Compose[F, G]
     tassert[C] {
-      pf[Comp](new A {})
+      Pf[Comp](new A {})
     }
   }
 
@@ -105,7 +103,8 @@ object Tost {
   ;
   {
     tassert[Int :: Nil] {
-      pf[AppendTo]((Nil, 12))
+      import fn.pfs.AppendTo.Decoration
+      12.appendTo(Nil)
     }
   }
 
@@ -116,14 +115,15 @@ object Tost {
   ;
   {
     tassert[Int :: Boolean :: String :: Nil] {
-      li.reduce(Nil, AppendTo)
+      import fn.reduce.Decoration
+      li.reduce(Nil)(AppendTo)
     }
   }
 
 
   def main(args: Array[String]): Unit = {
-    import fn.list.select.SelectDecoration
+    import fn.pfs.Select.Decoration
     val lol = new B {} :: new AA {} :: new A {} :: new A{} :: Nil
-    val wat = lol select F
+    val wat = lol.select(F)
   }
 }

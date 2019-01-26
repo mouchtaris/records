@@ -1,4 +1,4 @@
-package fn
+package fns
 
 import scala.language.higherKinds
 

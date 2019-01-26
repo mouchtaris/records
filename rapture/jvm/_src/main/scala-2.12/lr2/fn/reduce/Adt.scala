@@ -1,5 +1,5 @@
 package lr2
-package fn
+package fns
 package reduce
 
 //final case class Adt[S](

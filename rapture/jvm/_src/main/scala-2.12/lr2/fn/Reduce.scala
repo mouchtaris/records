@@ -1,5 +1,5 @@
 package lr2
-package fn
+package fns
 
 trait Reduce[S] extends Any {
 
