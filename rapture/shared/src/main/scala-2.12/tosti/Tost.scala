@@ -123,10 +123,11 @@ object Tost {
   }
 
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String])(implicit println: io.Println): Unit = {
     import fn.pfs.Select.Decoration
     val lol = B :: AA :: A :: A :: Nil
     val wat = lol.select(F)
+    println(lol)
     println(wat)
   }
 }
