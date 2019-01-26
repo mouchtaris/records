@@ -6,7 +6,7 @@ object Tost {
 
   import fn.pf.{ Pf, Def, Definition, Compose }
   import fn.list.{ ::, Nil }
-  import fn.pfs.AppendTo
+  import fn.pfs.{ AppendTo, Select }
 
   final implicit class TAsserter[T](val unit: Unit) extends AnyVal {
     def apply[V](v: ⇒ V)(implicit ev: V <:< T): Unit = unit
@@ -15,7 +15,7 @@ object Tost {
   def tassert[T]: TAsserter[T] = ()
 
   val li = 0 :: false :: "0" :: Nil
-  val li1 = new A {} :: new AA {} :: new B {} :: new C {} :: Nil
+  val li1 = A :: AA :: B :: C :: Nil
 
   trait A extends Any
   case object A extends A
@@ -129,5 +129,6 @@ object Tost {
     val wat = lol.select(F)
     println(lol)
     println(wat)
+    println(li1.select(F))
   }
 }
