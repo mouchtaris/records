@@ -18,23 +18,25 @@ object Tost {
   val li1 = new A {} :: new AA {} :: new B {} :: new C {} :: Nil
 
   trait A extends Any
+  case object A extends A
 
   trait AA extends Any with A
+  case object AA extends AA
 
   trait B extends Any
+  case object B extends B
 
   trait C extends Any
+  case object C extends C
 
   trait F extends Any with Def[F]
-
   object F extends F
 
   trait G extends Any with Def[G]
-
   object G extends G
 
-  implicit val pfF: Definition[F, A, B] = Definition(_ ⇒ new B {})
-  implicit val pfG: Definition[G, B, C] = Definition(_ ⇒ new C {})
+  implicit val pfF: Definition[F, A, B] = Definition(_ ⇒ B)
+  implicit val pfG: Definition[G, B, C] = Definition(_ ⇒ C)
 
   // == fn.list.pf.Pf ==
   //
@@ -70,7 +72,7 @@ object Tost {
   ;
   {
     tassert[Pf[F, A] {type Out <: B}] {
-      Def[F, A](_ ⇒ new B {})
+      Def[F, A](_ ⇒ B)
     }
   }
 
@@ -80,7 +82,7 @@ object Tost {
   ;
   {
     tassert[B] {
-      Pf[F](new A {})
+      Pf[F](A)
     }
   }
 
@@ -92,7 +94,7 @@ object Tost {
   {
     type Comp = Compose[F, G]
     tassert[C] {
-      Pf[Comp](new A {})
+      Pf[Comp](A)
     }
   }
 
@@ -123,7 +125,8 @@ object Tost {
 
   def main(args: Array[String]): Unit = {
     import fn.pfs.Select.Decoration
-    val lol = new B {} :: new AA {} :: new A {} :: new A{} :: Nil
+    val lol = B :: AA :: A :: A :: Nil
     val wat = lol.select(F)
+    println(wat)
   }
 }

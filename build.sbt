@@ -12,6 +12,11 @@ lazy val rapture = crossProject(JVMPlatform, JSPlatform)
     ScalacheckSettings.settings ++
     Seq.empty
   }
+  .jsSettings(
+    scalaJSUseMainModuleInitializer := true,
+    mainClass in Compile := Some("hatchjs.Main"),
+    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.6",
+  )
   .jvmSettings(
     GoogleSettings.settings ++
     AkkaActorSettings.settings ++
