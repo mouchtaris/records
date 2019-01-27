@@ -1,4 +1,4 @@
-package lr
+package t.lr
 
 final case class Expansion(value: Vector[symbols.Symbol]) {
 

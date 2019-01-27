@@ -1,10 +1,10 @@
-package lr
+package t.lr
 
 import scala.annotation.tailrec
 import scala.collection.immutable._
 import scala.util.{ Try, Success, Failure }
 import lib.Debuggation
-import lr.symbols.Terminal.ε
+import t.lr.symbols.Terminal.ε
 
 import scala.collection.GenTraversableOnce
 

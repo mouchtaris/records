@@ -1,4 +1,4 @@
-package lr
+package t.lr
 
 import
   scala.collection.immutable._,
@@ -11,11 +11,11 @@ import
   Prop._
 
 object GenerationChecks
-  extends Properties("lr.Generation")
+  extends Properties("t.lr.Generation")
 {
   import
-    lr.Generation,
-    lr.symbols
+    t.lr.Generation,
+    t.lr.symbols
   type S = symbols.Symbol
   type N = symbols.Terminal
   val N = symbols.Terminal

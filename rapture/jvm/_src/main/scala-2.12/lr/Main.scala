@@ -1,4 +1,4 @@
-package lr
+package t.lr
 
 object Main {
   def main(args: Array[String]): Unit = {

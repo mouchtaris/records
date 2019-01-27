@@ -1,6 +1,7 @@
 package hatchjs
 import org.scalajs.dom
 import dom.document
+import t.io.Println
 
 object Main {
 
@@ -11,7 +12,7 @@ object Main {
     targetNode.appendChild(parNode)
   }
 
-  final case class DomPrintln(root: dom.Node) extends io.Println {
+  final case class DomPrintln(root: dom.Node) extends Println {
     private[this] val append = appendElem("pre")(root) _
     override def apply(): Unit = ()
     override def apply(str: String): Unit = append(str)
@@ -20,7 +21,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     implicit val println: DomPrintln = DomPrintln(dom.document.body)
-    tosti.Tost.main(args)
+    t.tosti.Tost.main(args)
   }
 
 }

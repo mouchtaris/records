@@ -1,4 +1,4 @@
-package lr
+package t.lr
 
 import scala.collection.immutable._
 import scala.reflect.ClassTag

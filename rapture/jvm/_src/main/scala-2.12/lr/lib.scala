@@ -1,4 +1,4 @@
-package lr
+package t.lr
 
 object lib {
 
