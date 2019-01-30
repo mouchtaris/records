@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 source 'https://rubygems.org'
 
-ruby '2.3.3', engine: :jruby, engine_version: '<= 9.1.19'
+ruby '2.5.0', engine: :jruby, engine_version: '<= 9.2.5'
 
 # rubocop:disable Bundler/OrderedGems
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
+gem 'bundler', ' < 2.0'
 gem 'rails', '~> 4'
 gem 'pg', platform: :ruby
 gem 'activerecord-jdbcpostgresql-adapter', platform: :jruby

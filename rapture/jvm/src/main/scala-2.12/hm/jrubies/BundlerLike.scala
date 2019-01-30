@@ -30,16 +30,20 @@ trait BundlerLike
 
   final def bundle: Command =
     gem(Env.empty, "bundler", "bundle")
+  final def bundle1: Command =
+    gem(Env.empty, "bundler", "bundle", Some("1.17.3"))
 
   final def bundle_help: Command = bundle + "help"
   final def bundle_help_install: Command = bundle_help + "install"
   final def bundle_help_package: Command = bundle_help + "pacakge"
   final def bundle_init: Command = bundle + "init"
-  final def bundle_install: Command =
+  final def make_bundle_install(bundle: Command): Command =
     bundle + "install" +
       "--path" + bundler_base.self.relativize(BUNDLE_PATH.self).toString +
       "--no-cache" +
       "--gemfile" + BUNDLE_GEMFILE.path
+  final def bundle_install: Command = make_bundle_install(bundle)
+  final def bundle1_install: Command = make_bundle_install(bundle1)
   final def bundle_install_local: Command = bundle_install + "--local"
   final def bundle_package: Command = bundle + "package" + "--all"
 

@@ -45,19 +45,21 @@ object Main {
 //    s.binding.foreach(println)
     //hm.Incubate.closed_type_classes.test()
     (
-      2 match {
+      7 match {
         case 1 ⇒
           bun.bundle_help_install
         case 2 ⇒
           bun.bundle_install
         case 3 ⇒
-          bun.gem.install_bundler
+          bun.gem.install_bundler("1.17.3")
         case 4 ⇒
           bun.pry
         case 5 ⇒
           bun.bundle_init
         case 6 ⇒
           bun.haml_index
+        case 7 ⇒
+          bun.bundle1_install
       }
     )()
   }

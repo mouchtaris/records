@@ -30,7 +30,7 @@ trait GemLike
     "--remote",
     name
   )
-  final def install_bundler: Command = install("bundler")
+  final def install_bundler(version: String = ""): Command = install(s"bundler:$version")
 
   final def prelude_rb: String =
     s"""
@@ -45,7 +45,8 @@ trait GemLike
   final def apply(
     env: Env,
     gemName: String,
-    bin: String
+    bin: String,
+    version: Option[String] = None,
   ): Command =
     Command(
       Vector(
@@ -66,9 +67,10 @@ trait GemLike
            |
            |GEM_NAME = '$gemName'
            |GEM_BIN = '$bin'
+           |GEM_VERSION = ${version.map(v ⇒ s"'$v'") getOrElse "ANY_VERSION"}
            |
-           |gem GEM_NAME, ANY_VERSION
-           |load Gem.bin_path(GEM_NAME, GEM_BIN, ANY_VERSION)
+           |gem GEM_NAME, GEM_VERSION
+           |load Gem.bin_path(GEM_NAME, GEM_BIN, GEM_VERSION)
          """.stripMargin
       ): _*
     )

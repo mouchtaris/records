@@ -5,7 +5,7 @@ import
 object JRubySettings {
 
   final val ORG = "org.jruby"
-  final val VERSION = "9.1.17.0"
+  final val VERSION = "9.2.5.0"
 
   final object artifacts {
     final val jruby = "jruby"

@@ -1,14 +1,16 @@
 package t.tosti
 
 import t.io.Println
+import t.fn.predef.I
+import t.fn.nat.Nat
 
 import scala.language.existentials
 
 object Tost {
 
-  import t.fn.pf.{ Pf, Def, Definition, Compose }
-  import t.fn.list.{ ::, Nil }
-  import t.fn.pfs.{ AppendTo, Select }
+  import t.fn.list.{::, Nil}
+  import t.fn.pf.{Compose, Def, Definition, Pf}
+  import t.fn.pfs.AppendTo
 
   final implicit class TAsserter[T](val unit: Unit) extends AnyVal {
     def apply[V](v: ⇒ V)(implicit ev: V <:< T): Unit = unit
@@ -40,7 +42,7 @@ object Tost {
   implicit val pfF: Definition[F, A, B] = Definition(_ ⇒ B)
   implicit val pfG: Definition[G, B, C] = Definition(_ ⇒ C)
 
-  // == t.fn.list.pf.Pf ==
+  // == Pf ==
   //
   // Is contravariant on F
   ;
@@ -62,7 +64,7 @@ object Tost {
     }
   }
 
-  // == t.fn.list.pf.Def ==
+  // == Def ==
   //
   // has #at[In]#t[R]
   ;
@@ -89,7 +91,7 @@ object Tost {
   }
 
   //
-  // == t.fn.list.pf.Compose ==
+  // == Compose ==
   //
   // Composes functions
   ;
@@ -101,7 +103,7 @@ object Tost {
   }
 
   //
-  // == t.fn.list.pf.AppendTo ==
+  // == AppendTo ==
   //
   // (B, A) => A :: B
   ;
@@ -113,7 +115,7 @@ object Tost {
   }
 
   //
-  // == t.fn.list.pf.Reduce ==
+  // == Reduce ==
   //
   // Reduces using F
   ;
@@ -124,13 +126,29 @@ object Tost {
     }
   }
 
+  //
+  // == Select ==
+  //
+  ;
+  {
+    import t.fn.pfs.Select.Decoration
+    tassert[ B :: B :: Nil ] {
+      li1.select(F)
+    }
+  }
+
+  //
+  // == Length ==
+  //
+  ;
+  {
+    import t.fn.pfs.Length
+    tassert[ Nat._0 ] { Pf[Length](Nil) }
+    tassert[ Nat._1 ] { Pf[Length](A :: Nil) }
+    tassert[ Nat._2 ] { Pf[Length](A :: B :: Nil) }
+  }
+
 
   def main(args: Array[String])(implicit println: Println): Unit = {
-    import t.fn.pfs.Select.Decoration
-    val lol = B :: AA :: A :: A :: Nil
-    val wat = lol.select(F)
-    println(lol)
-    println(wat)
-    println(li1.select(F))
   }
 }

@@ -17,6 +17,7 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
+    main0(args)
   }
 
   /** Configuration */
@@ -87,11 +88,11 @@ object Main {
         .via(scene.httpServer.handlerFlow)
         .runWith(Sink.head)
     val done = for {
-      resLogin ← send(reqLogin)
+//      resLogin ← send(reqLogin)
       user ← db.users.by_email("mouchtaris@gmail.com")
       done ← actorSystem.terminate()
     } yield {
-      println(resLogin)
+//      println(resLogin)
       println(user)
     }
     Await.ready(done, 120.seconds)
