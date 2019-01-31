@@ -1,4 +1,5 @@
 package t.fn
+package list
 package reduce
 
 final class ReduceNilDefinition[Zero, F](val unit: Unit)
@@ -12,5 +13,3 @@ final class ReduceNilDefinition[Zero, F](val unit: Unit)
   }
 
 }
-
-

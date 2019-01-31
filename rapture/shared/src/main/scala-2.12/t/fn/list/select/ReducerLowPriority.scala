@@ -1,4 +1,5 @@
-package t.fn.pfs.select
+package t.fn
+package list.select
 
 trait ReducerLowPriority extends Any {
 

@@ -1,16 +1,16 @@
-package t.tosti
+package t
+package tosti
 
-import t.io.Println
-import t.fn.predef.I
-import t.fn.nat.Nat
+import t.fn.pf.compose.Compose
+import io.Println
 
 import scala.language.existentials
 
 object Tost {
 
+  import t.fn.list.appendTo.AppendTo
   import t.fn.list.{::, Nil}
-  import t.fn.pf.{Compose, Def, Definition, Pf}
-  import t.fn.pfs.AppendTo
+  import t.fn.pf.{Def, Definition, Pf}
 
   final implicit class TAsserter[T](val unit: Unit) extends AnyVal {
     def apply[V](v: ⇒ V)(implicit ev: V <:< T): Unit = unit
@@ -20,6 +20,7 @@ object Tost {
 
   val li = 0 :: false :: "0" :: Nil
   val li1 = A :: AA :: B :: C :: Nil
+  val lia = A :: AA :: Nil
 
   trait A extends Any
   case object A extends A
@@ -109,7 +110,7 @@ object Tost {
   ;
   {
     tassert[Int :: Nil] {
-      import t.fn.pfs.AppendTo.Decoration
+      import t.fn.list.appendTo.AppendTo.Decoration
       12.appendTo(Nil)
     }
   }
@@ -121,7 +122,7 @@ object Tost {
   ;
   {
     tassert[Int :: Boolean :: String :: Nil] {
-      import t.fn.reduce.Decoration
+      import t.fn.list.reduce.Decoration
       li.reduce(Nil)(AppendTo)
     }
   }
@@ -131,7 +132,7 @@ object Tost {
   //
   ;
   {
-    import t.fn.pfs.Select.Decoration
+    import t.fn.list.select.Decoration
     tassert[ B :: B :: Nil ] {
       li1.select(F)
     }
@@ -142,10 +143,24 @@ object Tost {
   //
   ;
   {
-    import t.fn.pfs.Length
-    tassert[ Nat._0 ] { Pf[Length](Nil) }
-    tassert[ Nat._1 ] { Pf[Length](A :: Nil) }
-    tassert[ Nat._2 ] { Pf[Length](A :: B :: Nil) }
+    import t.fn.list.length.Length
+    import t.fn.nat._
+    tassert[ _0 ] { Pf[Length](Nil) }
+    tassert[ _1 ] { Pf[Length](A :: Nil) }
+    tassert[ _2 ] { Pf[Length](A :: B :: Nil) }
+  }
+
+  //
+  // == Map ==
+  //
+  ;
+  {
+    import t.fn.list.map.Map.{ Decoration ⇒ __MD }
+    tassert[ B :: B :: Nil ] {
+      lia.map(F)
+    }
+    import t.fn.list.select.{ Decoration ⇒ __SD }
+    li1.select(F)
   }
 
 

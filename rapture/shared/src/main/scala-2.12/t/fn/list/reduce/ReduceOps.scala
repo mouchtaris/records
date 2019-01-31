@@ -1,4 +1,5 @@
-package t.fn.reduce
+package t.fn
+package list.reduce
 
 trait ReduceOps[S] extends Any {
 

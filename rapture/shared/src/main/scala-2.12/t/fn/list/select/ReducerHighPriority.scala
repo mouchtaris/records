@@ -1,17 +1,15 @@
 package t.fn
-package pfs.select
-
-import pf.Def
-import list.{ List, :: }
+package list
+package select
 
 trait ReducerHighPriority extends Any with ReducerLowPriority {
 
   implicit def reducerOnDefinedDefinition[
     F,
-    Zero <: List,
+    Accum <: List,
     In,
     R: Def[F]#at[In]#t,
-  ]: ReducerOnDefined[F, Zero, In, R] =
-    new ReducerOnDefined
+  ]: ReducerOnDefined[F, Accum, In, R] =
+    new ReducerOnDefined(implicitly)
 
 }

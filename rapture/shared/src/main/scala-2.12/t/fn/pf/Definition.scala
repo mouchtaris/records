@@ -1,6 +1,6 @@
 package t.fn.pf
 
-final class Definition[F, In, Out_](val self: In ⇒ Out_)
+final class Definition[-F, -In, Out_](val self: In ⇒ Out_)
   extends AnyVal
     with Pf[F, In] {
   override type Out = Out_
@@ -12,4 +12,5 @@ object Definition {
 
   def apply[F, In, Out](self: In ⇒ Out): Definition[F, In, Out] =
     new Definition(self)
+
 }

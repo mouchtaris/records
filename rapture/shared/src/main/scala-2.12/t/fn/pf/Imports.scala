@@ -1,5 +1,5 @@
 package t.fn.pf
-import t.fn.{ pf ⇒ pkg }
+import t.fn.{pf ⇒ pkg}
 
 trait Imports {
 
@@ -9,7 +9,10 @@ trait Imports {
   type Def[F] = pkg.Def[F]
   val Def: pkg.Def.type = pkg.Def
 
-  type Compose[F, G] = pkg.Compose[F, G]
-  val Compose: pkg.Compose.type = pkg.Compose
+  type Definition[-F, -A, B] = pkg.Definition[F, A, B]
+  val Definition: pkg.Definition.type = pkg.Definition
+
+  type Compose[F, G] = t.fn.pf.compose.Compose[F, G]
+  val Compose: t.fn.pf.compose.Compose.type = compose.Compose
 
 }

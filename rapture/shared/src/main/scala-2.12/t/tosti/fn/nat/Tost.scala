@@ -2,11 +2,22 @@ package t.tosti.fn.nat
 
 import t.fn.nat._
 import t.fn.pf.Def
-import t.fn.nat.Nat._
 
 object Tost {
 
   def expect_eq[A, B, R: Def[Add]#at[(A, B)]#t]: Unit = ()
+  def expect_maker[A](implicit make: Def[t.fn.pfs.Make[A]]#at[Unit]#t[A]): Unit = ()
+
+  expect_maker[_0]
+  expect_maker[_1]
+  expect_maker[_2]
+  expect_maker[_3]
+  expect_maker[_4]
+  expect_maker[_5]
+  expect_maker[_6]
+  expect_maker[_7]
+  expect_maker[_8]
+  expect_maker[_9]
 
   expect_eq[_0, _0, _0]
 

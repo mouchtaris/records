@@ -1,7 +1,5 @@
 package t.fn
-package pfs.select
-
-import pf.Def
+package list.select
 
 sealed trait Reducer[F] extends Any with Def[Reducer[F]]
 

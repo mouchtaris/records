@@ -1,3 +1,4 @@
-package t.fn.reduce
+package t.fn
+package list.reduce
 
 trait ReduceLowPriority extends Any
