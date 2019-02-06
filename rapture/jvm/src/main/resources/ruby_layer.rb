@@ -60,6 +60,28 @@ class RubyLayer
     require 'irb'
     IRB::Irb.new
   end
+
+  def gem_bin_stub(gem_name:, bin:, argv:)
+    require 'rubygems'
+
+    version = ">= 0.a"
+
+    if argv.first
+      str = argv.first
+      str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
+      if md = /\A_(.*)_\z/.match(str) and Gem::Version.correct?(md[1]) then
+        version = md[1]
+        argv.shift
+      end
+    end
+
+    if Gem.respond_to?(:activate_bin_path)
+      load Gem.activate_bin_path(gem_name, bin, version)
+    else
+      gem gem_name, version
+      load Gem.bin_path(gem_name, bin, version)
+    end
+  end
 end
 
 puts 'Ruby layer loaded.'
