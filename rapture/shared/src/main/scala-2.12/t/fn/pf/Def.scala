@@ -12,5 +12,10 @@ trait Def[F] extends Any {
 
 object Def {
   def apply[F, In]: Definer[F, In] = new Definer(())
-}
 
+  type WithOut[F, Out] = {
+    type t[At] = Def[F]#at[At]#t[Out]
+  }
+  type String[F] = WithOut[F, Predef.String]
+
+}

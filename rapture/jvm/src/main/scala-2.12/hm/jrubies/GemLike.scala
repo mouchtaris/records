@@ -20,7 +20,7 @@ trait GemLike
   final def help: Command = this + "help"
   final def help_install: Command = help + "install"
   //
-  final def install(name: String): Command = this + Vector(
+  final def install(name: String, version: String = ""): Command = this + Vector(
     "install",
     "--install-dir", GEM_HOME.path,
     "--no-document",
@@ -28,9 +28,10 @@ trait GemLike
     "--no-user-install",
     "--post-install-message",
     "--remote",
-    name
+    if (version.nonEmpty) s"$name:$version" else name
   )
-  final def install_bundler(version: String = ""): Command = install(s"bundler:$version")
+  final def install_bundler(version: String = ""): Command = install("bundler", version)
+  final def install_rainbow(version: String = ""): Command = install("rainbow", version)
 
   final def prelude_rb: String =
     s"""

@@ -154,7 +154,7 @@ object Tost {
   // == Map ==
   //
   ;
-  {
+  val watmap = {
     import t.fn.list.map.Map.{ Decoration ⇒ __MD }
     tassert[ B :: B :: Nil ] {
       lia.map(F)
@@ -163,7 +163,7 @@ object Tost {
     li1.select(F)
   }
 
-
   def main(args: Array[String])(implicit println: Println): Unit = {
+    println(watmap)
   }
 }

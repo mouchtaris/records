@@ -15,7 +15,6 @@ package object nat {
   type _8 = Succ[_7]
   type _9 = Succ[_8]
 
-  implicit case object Zero extends Zero
   implicit val _0: _0 = Zero
   implicit val _1: _1 = Succ(_0)
   implicit val _2: _2 = Succ(_1)
