@@ -25,11 +25,15 @@ class RubyLayer
     )    
   end
 
-  def initialize(gem_home:)
+  def initialize(gem_home:, **opts)
     @gem_home = gem_home
+    parse_opts!(opts)
     @logger = Logger.new(STDERR)
     prelude!
     diagnose
+  end
+
+  def bundler_env!
   end
 
   def install_gem(name:, version: nil)

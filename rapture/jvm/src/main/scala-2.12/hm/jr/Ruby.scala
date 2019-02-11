@@ -12,9 +12,11 @@ object Ruby {
   def main(args: Array[String]): Unit = {
     import t.jr.Hatchy.{ Ruby ⇒ HRuby, _ }
 
+    val env = Env((rc / "_envs", "mse"))
     val ruby = HRuby(
-      gemEnv = rc / "_envs",
-      lib = rc
+      gemEnv = env,
+      lib = rc,
+      bundlerEnv = Some(env),
     )
     val engine = org.jruby.Ruby.newInstance()
     val MUFA = !true

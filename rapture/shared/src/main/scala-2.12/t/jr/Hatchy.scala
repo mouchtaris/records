@@ -158,32 +158,76 @@ object Hatchy {
   }
   trait GemEnv extends Any {
     this: RootAdt ⇒
-    def rubyGems: JPath = root resolve "_rubygems"
+    final def rubyGems: JPath = root resolve "_rubygems"
+  }
+  trait BundlerEnv extends Any {
+    this: RootAdt ⇒
+    final def bundlerEnvs: JPath = root resolve "_bundler_envs"
+    final def bundlerGems: JPath = root resolve "_bundler_gems"
+    final def bundlerVersion: String = "1.17.3"
+    final def bundlerGemfile: JPath = bundlerEnvs resolve bundlerEnv resolve "Gemfile"
+    def bundlerEnv: String
   }
 
-  final implicit class Env(val root: JPath) extends AnyVal with RootAdt with GemEnv
+  final implicit class Env(val self: (JPath, String)) extends AnyVal with RootAdt with GemEnv with BundlerEnv {
+    override def root: JPath = self._1
+    override def bundlerEnv: String = self._2
+  }
 
   final implicit class Lib(val root: JPath) extends AnyVal {
     def load(path: JPath): Code = getClass.getResourceAsStream((path \ root).toUnix)
     def libexec(name: String): Code = load(root / "libexec" / s"$name.rb")
   }
 
+  object opts {
+    val gemHome = Symbol("gem_home")
+
+    val bundleVersion = Symbol("bundle_version")
+    val bundleGemfile = Symbol("bundle_gemfile")
+    val bundlePath = Symbol("bundle_path")
+
+    val name = Symbol("name")
+    val version = Symbol("version")
+
+    val gemName = Symbol("gem_name")
+    val bin = Symbol("bin")
+    val argv = Symbol("argv")
+  }
+
+
   final case class Command(name: String, opts: Map[Symbol, Rb.Valable])
   final case class Ruby(
     gemEnv: GemEnv,
     lib: Lib,
+    bundlerEnv: Param[BundlerEnv],
   ) {
+
+    def bundlerOpts: Map[Symbol, Rb.Valable] =
+      bundlerEnv
+        .map { be ⇒
+          Map(
+            opts.bundleVersion → Rb.Valable(be.bundlerVersion),
+            opts.bundleGemfile → Rb.Valable(be.bundlerGemfile.toUnix),
+            opts.bundlePath → Rb.Valable(be.bundlerGems.toUnix),
+          )
+        }
+        .getOrElse(Map.empty)
+
+    def gemOpts: Map[Symbol, Rb.Valable] =
+      Map(
+        opts.gemHome → Rb.Valable(gemEnv.rubyGems.toUnix)
+      )
 
     def toCode(command: Command): String = command match {
       case Command(name, opts) ⇒
+        val newOpts = Rb.Val(2)(gemOpts ++ bundlerOpts)
         val optsStr = Rb.Val(2)(opts)
-        val gemHomeStr = Rb.str(gemEnv.rubyGems.toUnix)
         s"""
            |require 'ruby_layer'
            |
            |RubyLayer
            |  .new(
-           |    gem_home: $gemHomeStr
+           |$newOpts
            |  )
            |  .$name(
            |$optsStr
@@ -191,16 +235,7 @@ object Hatchy {
            |""".stripMargin
     }
 
-    object opts {
-      val name = Symbol("name")
-      val version = Symbol("version")
-
-      val gemName = Symbol("gem_name")
-      val bin = Symbol("bin")
-      val argv = Symbol("argv")
-    }
-
-    def install_gem(name: String, version: Option[String]) = Command(
+    def install_gem(name: String, version: Param[String]) = Command(
       name = "install_gem",
       opts = version
         .map(opts.version → _)
