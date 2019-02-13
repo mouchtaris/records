@@ -199,7 +199,7 @@ object Hatchy {
   final case class Ruby(
     gemEnv: GemEnv,
     lib: Lib,
-    bundlerEnv: Param[BundlerEnv],
+    bundlerEnv: Option[BundlerEnv],
   ) {
 
     def bundlerOpts: Map[Symbol, Rb.Valable] =
@@ -235,7 +235,7 @@ object Hatchy {
            |""".stripMargin
     }
 
-    def install_gem(name: String, version: Param[String]) = Command(
+    def install_gem(name: String, version: Option[String]) = Command(
       name = "install_gem",
       opts = version
         .map(opts.version → _)

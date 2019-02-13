@@ -3,7 +3,7 @@ package commands
 
 object Irb {
 
-  def apply() = Command(
+  def apply() = Command.Impl(
     name = "irb_session",
     opts = Map.empty,
   )

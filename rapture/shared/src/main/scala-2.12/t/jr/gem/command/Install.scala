@@ -3,7 +3,7 @@ package gem.command
 
 object Install {
 
-  def apply(name: String, version: Option[String]) = Command(
+  def apply(name: String, version: Option[String]) = Command.Impl(
     name = "install_gem",
     opts = version
       .map(params.version → _)
