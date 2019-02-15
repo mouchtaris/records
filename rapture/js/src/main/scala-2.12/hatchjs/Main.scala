@@ -21,7 +21,6 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     implicit val println: DomPrintln = DomPrintln(dom.document.body)
-    t.tosti.Tost.main(args)
   }
 
 }
