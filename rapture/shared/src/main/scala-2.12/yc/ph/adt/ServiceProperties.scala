@@ -2,10 +2,7 @@ package yc
 package ph
 package adt
 
-trait ServiceProperties extends Any {
-
-  def techOwner: Option[String]
-
-  def productOwner: Option[String]
-
-}
+final case class ServiceProperties(
+  techOwner: Option[String],
+  productOwner: Option[String],
+)

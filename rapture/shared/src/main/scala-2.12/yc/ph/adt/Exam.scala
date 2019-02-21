@@ -2,10 +2,11 @@ package yc
 package ph
 package adt
 
-trait Exam extends Any {
+final case class Exam(
+  id: ExamId,
+  impl: ServiceInstance ⇒ ExamReport,
+) {
 
-  def id: ExamId
-
-  def apply(inst: ServiceInstance): ExamReport
+  def apply(inst: ServiceInstance): ExamReport = impl(inst)
 
 }

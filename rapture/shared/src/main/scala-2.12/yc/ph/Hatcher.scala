@@ -11,8 +11,6 @@ object Hatcher {
     discovery = detail.service.discovery.Fake.fake,
     doctor = detail.service.doctor.OfExamination(
       adt.Examination(
-//        detail.exams.Bollock.instance,
-//        detail.exams.Bastard.instance,
         detail.exams.HasOwner(propertyProvider, _.techOwner, "tech"),
         detail.exams.HasOwner(propertyProvider, _.productOwner, "product"),
       )

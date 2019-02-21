@@ -5,26 +5,32 @@ package properties
 
 import bs.bsjson._
 
-trait FromProjectYaml extends Any with adt.ServiceProperties {
+object FromProjectYaml {
 
-  protected[this] def projectYaml: JsVal
+  def apply(projectYaml: JsVal): adt.ServiceProperties = {
 
-  final def techOwner: Option[String] = {
-    projectYaml match {
-      case JsMap(map) ⇒ map
-        .get(JsVal("lead_developer"))
-        .map { case JsStr(owner) ⇒ owner }
-      case _ ⇒
-        None
+    val techOwner: Option[String] = {
+      projectYaml match {
+        case JsMap(map) ⇒ map
+          .get(JsVal("lead_developer"))
+          .map { case JsStr(owner) ⇒ owner }
+        case _ ⇒
+          None
+      }
     }
-  }
 
-  final def productOwner: Option[String] = {
-    projectYaml match {
-      case JsMap(map) ⇒ map
-        .get(JsVal("product_lead"))
-        .map { case JsStr(owner) ⇒ owner }
+    val productOwner: Option[String] = {
+      projectYaml match {
+        case JsMap(map) ⇒ map
+          .get(JsVal("product_lead"))
+          .map { case JsStr(owner) ⇒ owner }
+      }
     }
+
+    adt.ServiceProperties(
+      techOwner = techOwner,
+      productOwner = productOwner,
+    )
   }
 
 }
