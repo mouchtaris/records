@@ -5,6 +5,7 @@ package service
 package properties
 
 import ph.{service ⇒ outer}
+import bs.bsjson._
 
 final class Fake(val unit: Unit)
   extends AnyVal
@@ -13,12 +14,17 @@ final class Fake(val unit: Unit)
 
   override def properties(serviceInstance: adt.ServiceInstance): Option[adt.ServiceProperties] =
     if (serviceInstance.service.projectId.value == "bobs_stuff")
-      Some(new EmptyProperties {
-        override val techOwner: Option[String] = Some("bob")
-      })
+      Some(new detail.properties.FromProjectYaml {
+        def projectYaml: JsVal = JsVal(Map(
+          JsVal("lead_developer") → JsVal("rayta")
+        ))
+      }
+    )
     else if (serviceInstance.service.projectId.value == "god")
-      Some(new EmptyProperties {
-        override val productOwner: Option[String] = Some("gad")
+      Some(new detail.properties.FromProjectYaml {
+        def projectYaml: JsVal = JsVal(Map(
+          JsVal("product_lead") → JsVal("ivan")
+        ))
       })
     else
       None

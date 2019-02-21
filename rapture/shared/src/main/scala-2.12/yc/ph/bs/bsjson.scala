@@ -56,19 +56,43 @@ object bsjson {
   final class JsNum(val value: Long) extends AnyVal with JsVal {
     override def toString: String = value.toString
   }
+  object JsNum {
+    def unapply(v: JsVal): Option[Long] = v match {
+      case num: JsNum ⇒ Some(num.value)
+      case _ ⇒ None
+    }
+  }
 
   final class JsStr(val value: String) extends AnyVal with JsVal {
     override def toString: String = s""""${
       value.replaceAll("\\\"", "\\\"")
     }""""
   }
+  object JsStr {
+    def unapply(v: JsVal): Option[String] = v match {
+      case str: JsStr ⇒ Some(str.value)
+      case _ ⇒ None
+    }
+  }
 
   final class JsArr(val value: Vector[JsVal]) extends AnyVal with JsVal {
     override def toString: String = s"[${value.map(_.toString).mkString(", ")}]"
   }
+  object JsArr {
+    def unapply(v: JsVal): Option[Vector[JsVal]] = v match {
+      case arr: JsArr ⇒ Some(arr.value)
+      case _ ⇒ None
+    }
+  }
 
   final class JsMap(val value: Map[JsVal, JsVal]) extends AnyVal with JsVal {
     override def toString: String = s"{${value.map { case (k, v) ⇒ s"$k => $v" }.mkString(", ")}}"
+  }
+  object JsMap {
+    def unapply(v: JsVal): Option[Map[JsVal, JsVal]] = v match {
+      case map: JsMap ⇒ Some(map.value)
+      case _ ⇒ None
+    }
   }
 
 }
