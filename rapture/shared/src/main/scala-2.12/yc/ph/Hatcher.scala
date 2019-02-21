@@ -1,17 +1,20 @@
 package yc
 package ph
 
-import java.net.URI
-
 object Hatcher {
 
+  val propertyProvider: service.ServicePropertiesProvider =
+    detail.service.properties.Fake.instance
+
   val fake = Facade(
-    config = ph.detail.configuration.Fake.fake,
-    discovery = ph.detail.service.discovery.Fake.fake,
-    doctor = ph.detail.service.doctor.OfExamination(
+    config = detail.configuration.Fake.fake,
+    discovery = detail.service.discovery.Fake.fake,
+    doctor = detail.service.doctor.OfExamination(
       adt.Examination(
-        ph.detail.exams.Bollock.instance,
-        ph.detail.exams.Bastard.instance,
+//        detail.exams.Bollock.instance,
+//        detail.exams.Bastard.instance,
+        detail.exams.HasOwner(propertyProvider, _.techOwner, "tech"),
+        detail.exams.HasOwner(propertyProvider, _.productOwner, "product"),
       )
     ),
     store = ph.detail.service.store.Memory(),

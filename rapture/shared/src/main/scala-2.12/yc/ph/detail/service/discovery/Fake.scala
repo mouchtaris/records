@@ -10,8 +10,9 @@ final class Fake(val unit: Unit) extends AnyVal with outer.Discovery {
 
   override def services: Stream[adt.Service] = {
     Stream(
-      adt.Service(projectId = new adt.service.ProjectId(value = "backend")),
-      adt.Service(projectId = new adt.service.ProjectId(value = "frontend")),
+      adt.Service(projectId = new adt.service.ProjectId(value = "bobs_stuff")),
+      adt.Service(projectId = new adt.service.ProjectId(value = "god")),
+      adt.Service(projectId = new adt.service.ProjectId(value = "platform_health")),
     )
   }
 
