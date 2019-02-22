@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 final case class Facade(
   config: configuration.Configuration,
-  discovery: service.Discovery,
+  browsing: service.Browsing,
   doctor: service.Doctor,
   store: service.Store,
 ) {
@@ -13,16 +13,16 @@ final case class Facade(
   private[this] def log(level: String, typ: String, details: String): Unit = {
     println(s"""{event: "$typ", severe: "$level", details:  "$details"}""")
   }
-  private[this] def serviceDiscovered(s: adt.Service): Unit = {
-    log("info", "service_discovered", s"""{projectId: "${s.projectId.value}"}""")
+  private[this] def componentDiscovered(s: adt.Component): Unit = {
+    log("info", "component_discovered", s"""{projectId: "${s.projectId.value}"}""")
   }
-  private[this] def serviceExamined(s: adt.ServiceInstance): Unit = {
-    log(level = "info", typ = "service_examined", details = s"""{projectId: "${s.service.projectId.value}", at: "${s.at}"}""")
+  private[this] def componentExamined(s: adt.ComponentInstance): Unit = {
+    log(level = "info", typ = "component_examined", details = s"""{projectId: "${s.component.projectId.value}", at: "${s.at}"}""")
   }
   private[this] def now: java.time.Instant = {
     java.time.Instant.now()
   }
-  private[this] def reportEntries(entries: Stream[(adt.ServiceInstance, adt.ServiceReport)]): Unit = {
+  private[this] def reportEntries(entries: Stream[(adt.ComponentInstance, adt.ComponentReport)]): Unit = {
     import bs.bsjson.JsVal
     val txt = JsVal(
       entries
@@ -42,14 +42,15 @@ final case class Facade(
   }
 
   def analyse(): Unit = {
-    discovery.services.foreach { service ⇒
-      serviceDiscovered(service)
+    browsing.components.foreach { component ⇒
+      componentDiscovered(component)
 
-      val instance = adt.ServiceInstance(service, at = now, commit = adt.CommitId.random)
-      val report = doctor.examine(instance)
-      serviceExamined(instance)
+      browsing.latest(component).foreach { instance ⇒
+        val report = doctor.examine(instance)
+        componentExamined(instance)
 
-      store.store(instance, report)
+        store.store(instance, report)
+      }
     }
   }
 

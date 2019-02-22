@@ -3,12 +3,12 @@ package ph
 
 object Hatcher {
 
-  val propertyProvider: service.ServicePropertiesProvider =
+  val propertyProvider: service.ComponentPropertyProvider =
     detail.service.properties.Fake.instance
 
   val fake = Facade(
     config = detail.configuration.Fake.fake,
-    discovery = detail.service.discovery.Fake.fake,
+    browsing = detail.service.browsing.Fake.fake,
     doctor = detail.service.doctor.OfExamination(
       adt.Examination(
         detail.exams.HasOwner(propertyProvider, _.techOwner, "tech"),

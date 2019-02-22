@@ -7,19 +7,21 @@ import ph.{ service ⇒ outer }
 
 object HasOwner {
 
-  private[this] def zero(comment: String) = adt.ExamReport(comments = Vector(comment))
+  val MAX_SCORE = 10
 
-  private[this] def ten(owner: String) = adt.ExamReport(score = 10, metainformation = Map("owner" → owner))
+  private[this] def zero(comment: String) = adt.ExamReport(score = 0, max = MAX_SCORE, comments = Vector(comment))
+
+  private[this] def ten(owner: String) = adt.ExamReport(score = MAX_SCORE, max = MAX_SCORE, metainformation = Map("owner" → owner))
 
   private[this] def id(ownerType: String) = adt.ExamId(s"has_${ownerType}_owner")
 
   def apply(
-    propertyProvider: outer.ServicePropertiesProvider,
-    getOwner: adt.ServiceProperties ⇒ Option[String],
+    propertyProvider: outer.ComponentPropertyProvider,
+    getOwner: adt.ComponentProperties ⇒ Option[String],
     ownerType: String,
   ): adt.Exam = {
 
-    def impl(inst: adt.ServiceInstance): adt.ExamReport = {
+    def impl(inst: adt.ComponentInstance): adt.ExamReport = {
       propertyProvider.properties(inst) match {
         case Some(props) ⇒
           getOwner(props) match {

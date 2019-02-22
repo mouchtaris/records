@@ -4,9 +4,9 @@ package adt
 
 final case class Exam(
   id: ExamId,
-  impl: ServiceInstance ⇒ ExamReport,
+  impl: ComponentInstance ⇒ ExamReport,
 ) {
 
-  def apply(inst: ServiceInstance): ExamReport = impl(inst)
+  def apply(inst: ComponentInstance): ExamReport = impl(inst)
 
 }

@@ -5,8 +5,20 @@ package service
 
 import ph.{service ⇒ outer}
 
-final case class GitLab(
-  override val services: Stream[adt.Service],
+case class GitLab(
+  override val components: Stream[adt.Component],
 )
   extends AnyRef
-  with outer.Discovery
+  with outer.Browsing
+  with outer.ComponentPropertyProvider
+{
+
+  override def latest(component: adt.Component): Option[adt.ComponentInstance] = {
+    ???
+  }
+
+  override def properties(componentInstance: adt.ComponentInstance): Option[adt.ComponentProperties] = {
+    ???
+  }
+
+}

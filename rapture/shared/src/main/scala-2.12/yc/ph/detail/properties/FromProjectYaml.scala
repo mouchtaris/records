@@ -7,7 +7,7 @@ import bs.bsjson._
 
 object FromProjectYaml {
 
-  def apply(projectYaml: JsVal): adt.ServiceProperties = {
+  def apply(projectYaml: JsVal): adt.ComponentProperties = {
 
     val techOwner: Option[String] = {
       projectYaml match {
@@ -27,7 +27,7 @@ object FromProjectYaml {
       }
     }
 
-    adt.ServiceProperties(
+    adt.ComponentProperties(
       techOwner = techOwner,
       productOwner = productOwner,
     )

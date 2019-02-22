@@ -11,11 +11,11 @@ final class Memory(val repos: Repos) extends AnyVal with outer.Store {
 
   private[this] def _reports: Repo = repos._2
 
-  override def store(instance: adt.ServiceInstance, report: adt.ServiceReport): Unit = {
+  override def store(instance: adt.ComponentInstance, report: adt.ComponentReport): Unit = {
     _reports += (instance → report)
   }
 
-  override def all: Stream[(adt.ServiceInstance, adt.ServiceReport)] = {
+  override def all: Stream[(adt.ComponentInstance, adt.ComponentReport)] = {
     _reports.toStream
   }
 

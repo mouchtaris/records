@@ -10,16 +10,15 @@ final case class OfExamination(
   examination: adt.Examination,
 )
   extends AnyRef
-  with outer.Doctor
-{
+  with outer.Doctor {
 
-  override def examine(instance: adt.ServiceInstance) = adt.ServiceReport {
-    examination
+  override def examine(instance: adt.ComponentInstance) = adt.ComponentReport(
+    exams = examination
       .exams
-      .foldLeft(adt.ServiceReport.Value.empty) { (value, exam) ⇒
+      .foldLeft(adt.ComponentReport.emptyExams) { (value, exam) ⇒
         val report: adt.ExamReport = exam(instance)
         value + (exam.id → report)
       }
-  }
+  )
 
 }

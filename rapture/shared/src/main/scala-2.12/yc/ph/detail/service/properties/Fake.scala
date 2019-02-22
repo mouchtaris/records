@@ -19,19 +19,19 @@ object Fake {
   }
 
 
-  final implicit class Instance(val unit: Unit) extends AnyVal with outer.ServicePropertiesProvider {
+  final implicit class Instance(val unit: Unit) extends AnyVal with outer.ComponentPropertyProvider {
 
-    override def properties(serviceInstance: adt.ServiceInstance): Option[adt.ServiceProperties] = {
-      val yaml = {
+    override def properties(componentInstance: adt.ComponentInstance): Option[adt.ComponentProperties] = {
+      {
         import ProjectYaml._
-        serviceInstance.service.projectId.value match {
+        componentInstance.component.projectId.value match {
           case "platform_health" ⇒ Some(platformHealth)
           case "bobs_stuff" ⇒ Some(bobsStuff)
           case "wanna_be" ⇒ Some(wannaBe)
           case _ ⇒ None
         }
       }
-      yaml.map(detail.properties.FromProjectYaml.apply)
+        .map(detail.properties.FromProjectYaml.apply)
     }
 
   }

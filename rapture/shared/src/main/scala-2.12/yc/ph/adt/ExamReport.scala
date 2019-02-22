@@ -3,12 +3,10 @@ package ph
 package adt
 
 final case class ExamReport(
-  score: Long = 0,
+  score: Long,
+  max: Long,
   comments: Vector[String] = Vector.empty,
   metainformation: Map[String, String] = Map.empty,
 )
   extends AnyRef
-{
-  override def toString: String =
-    s"ExamReport[score=$score, comments=[${comments.mkString(", ")}]"
-}
+

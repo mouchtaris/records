@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 package object memory {
 
-  type Repo = mutable.Map[adt.ServiceInstance, adt.ServiceReport]
+  type Repo = mutable.Map[adt.ComponentInstance, adt.ComponentReport]
 
   type Repos = (
     Unit,

@@ -19,38 +19,32 @@ object bsjson {
   implicit def mapToVal[CC[a, b] <: Map[a, b], A: ToVal, B: ToVal]: ToVal[CC[A, B]] = map ⇒ pairsToVal[Stream, A, B].apply(map.toStream)
   implicit val valToVal: ToVal[JsVal] = identity _
 
+  implicit val examReport: ToVal[adt.ExamReport] = r ⇒ ToVal(Vector(
+    "score" → JsVal(r.score),
+    "comments" → JsVal(r.comments),
+    "metainformation" → JsVal(r.metainformation),
+    "max" → JsVal(r.max),
+  ))
+  implicit val examId: ToVal[adt.ExamId] = id ⇒ ToVal(id.value)
+
+  implicit val component: ToVal[adt.Component] = c ⇒ ToVal(Vector(
+    "projectId" → JsVal(c.projectId.value)
+  ))
+
+  implicit val componentInstance: ToVal[adt.ComponentInstance] = i ⇒ ToVal(Vector(
+    "at" → JsVal(i.at.getEpochSecond),
+    "commit" → JsVal(i.commit.toString),
+    "component" → JsVal(i.component),
+  ))
+
+  implicit val componentReport: ToVal[adt.ComponentReport] = r ⇒ ToVal(Vector(
+    "exams" → JsVal(r.exams),
+    "overall" → JsVal(r.overall),
+    "possible_max" → JsVal(r.possibleMax),
+  ))
+
   object JsVal {
     def apply[T: ToVal](obj: T): JsVal = ToVal(obj)
-
-    val score = apply("score")
-    val comments = apply("comments")
-    val metainformation = apply("metainformation")
-    def apply(value: adt.ExamReport): JsVal = apply(Vector(
-      score → apply(value.score),
-      comments → apply(value.comments),
-      metainformation → apply(value.metainformation),
-    ))
-    def apply(examId: adt.ExamId): JsVal = apply(examId.value)
-
-    val projectId = apply("projectId")
-    def apply(service: adt.Service): JsVal = apply(Vector(
-      projectId → apply(service.projectId.value),
-    ))
-
-    val at = apply("at")
-    val service = apply("service")
-    val commit = apply("commit")
-    def apply(serviceInstance: adt.ServiceInstance): JsVal = apply(Vector(
-      service → apply(serviceInstance.service),
-      at → apply(serviceInstance.at.getEpochSecond),
-      commit → apply(serviceInstance.commit.toString),
-    ))
-
-    def apply(serviceReport: adt.ServiceReport): JsVal = apply {
-      serviceReport.value
-        .map { case (examId, examReport) ⇒ JsVal(examId) → JsVal(examReport) }
-        .toVector
-    }
   }
 
   final class JsNum(val value: Long) extends AnyVal with JsVal {
